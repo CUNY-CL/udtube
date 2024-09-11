@@ -11,7 +11,7 @@ from transformers import AutoTokenizer, T5TokenizerFast
 from tokenizers import Encoding
 
 from batch import ConlluBatch, TextBatch
-from conllu_datasets import (
+from datasets import (
     ConlluMapDataset,
     TextIterDataset,
     ConlluIterDataset,

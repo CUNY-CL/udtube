@@ -1,3 +1,4 @@
-from udtube_package.udtube import udtube_cli_main
+from udtube_package.udtube import udtube_python_interface
 
-udtube_cli_main(["fit", "--config=records/configs/fit_config.yaml"])
+if __name__ == "__main__":
+    udtube_python_interface(["fit", "--config=records/configs/fit_config.yaml"])

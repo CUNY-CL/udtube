@@ -59,6 +59,13 @@ class UDTubeCLI(cli.LightningCLI):
             ]
 
 
+def udtube_python_interface(args: cli.ArgsType = None):
+    """
+        Interface to use models through python.
+    """
+    UDTubeCLI(models.UDTube, datamodules.ConlluDataModule, args=args)
+
+
 def main() -> None:
     logging.basicConfig(
         format="%(filename)s %(levelname)s: %(asctime)s - %(message)s",
