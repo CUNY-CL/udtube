@@ -60,7 +60,6 @@ data:
   predict_dataset: null
   test_dataset: null
   batch_size: 32
-  convert_to_um: true
   reverse_edits: false
   lang_with_space: true
   checkpoint: null

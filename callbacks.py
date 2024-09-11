@@ -11,7 +11,7 @@ from pytorch_lightning.callbacks import TQDMProgressBar
 from torch import Tensor
 from lightning.pytorch.callbacks import BasePredictionWriter
 
-from conllu_datasets import ConlluMapDataset
+from datasets import ConlluMapDataset
 from batch import CustomBatch
 from defaults import PAD_TAG
 
@@ -23,14 +23,14 @@ class CustomWriter(BasePredictionWriter):
         self.output_file = output_file
 
     def _write_to_conllu(
-            self,
-            sentences: Iterable[str],
-            words: Iterable[str],
-            poses: Iterable[List[int]],
-            xposes: Iterable[List[int]],
-            lemmas: Iterable[List[int]],
-            feats: Iterable[List[int]],
-            replacements: Iterable[Tuple[str, str]],
+        self,
+        sentences: Iterable[str],
+        words: Iterable[str],
+        poses: Iterable[List[int]],
+        xposes: Iterable[List[int]],
+        lemmas: Iterable[List[int]],
+        feats: Iterable[List[int]],
+        replacements: Iterable[Tuple[str, str]],
     ):
         # writing the output file
         if self.output_file == "stdout":
@@ -55,8 +55,8 @@ class CustomWriter(BasePredictionWriter):
                             if p_ == [
                                 w
                                 for w in words[batch_idx][
-                                         item_idx: item_idx + len(p_)
-                                         ]
+                                    item_idx : item_idx + len(p_)
+                                ]
                             ]:
                                 # writing multiword tok
                                 print(
@@ -73,7 +73,6 @@ class CustomWriter(BasePredictionWriter):
                                     sep="\t",
                                     file=sink,
                                 )
-
                 space_after = "_"
                 if words[batch_idx][item_idx] == PAD_TAG:
                     continue
@@ -98,30 +97,29 @@ class CustomWriter(BasePredictionWriter):
                     file=sink,
                 )
             print("", file=sink)
-
             if need_to_close:
                 sink.close()
 
     def write_on_batch_end(
-            self,
-            trainer: "pl.Trainer",
-            pl_module: "pl.LightningModule",
-            prediction: Tuple[Iterable[str], list[list[str]], Tensor],
-            batch_indices: Optional[Sequence[int]],
-            batch: CustomBatch,
-            batch_idx: int,
-            dataloader_idx: int,
+        self,
+        trainer: "pl.Trainer",
+        pl_module: "pl.LightningModule",
+        prediction: Tuple[Iterable[str], list[list[str]], Tensor],
+        batch_indices: Optional[Sequence[int]],
+        batch: CustomBatch,
+        batch_idx: int,
+        dataloader_idx: int,
     ) -> None:
         self._write_to_conllu(*prediction)
 
     def on_test_batch_end(
-            self,
-            trainer: "pl.Trainer",
-            pl_module: "pl.LightningModule",
-            outputs: Tuple[Iterable[str], list[list[str]], Tensor],
-            batch: CustomBatch,
-            batch_idx: int,
-            dataloader_idx: int = 0,
+        self,
+        trainer: "pl.Trainer",
+        pl_module: "pl.LightningModule",
+        outputs: Tuple[Iterable[str], list[list[str]], Tensor],
+        batch: CustomBatch,
+        batch_idx: int,
+        dataloader_idx: int = 0,
     ) -> None:
         if not self.interval.on_batch:
             return

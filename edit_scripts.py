@@ -35,7 +35,7 @@ class EditScript:
         self._ops = []
         matcher = difflib.SequenceMatcher(a=istring, b=ostring, autojunk=False)
         table: Dict[int, EditOp] = {}
-        for (tag, ix, iy, ox, oy) in matcher.get_opcodes():
+        for tag, ix, iy, ox, oy in matcher.get_opcodes():
             if tag in ("replace", "insert"):
                 op = table.get(ix, EditOp())
                 op.insert = ostring[ox:oy]
@@ -77,11 +77,11 @@ class EditScript:
 
     def apply(self, istring: str) -> str:
         pieces: List[str] = []
-        for (i, op) in enumerate(self._ops):
+        for i, op in enumerate(self._ops):
             pieces.extend(op.insert)
             if not op.delete:
-                pieces.append(istring[i:i + 1])
-        return "".join(pieces) + istring[len(self._ops):]
+                pieces.append(istring[i : i + 1])
+        return "".join(pieces) + istring[len(self._ops) :]
 
 
 class ReverseEditScript(EditScript):
