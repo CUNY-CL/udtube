@@ -1,0 +1,27 @@
+# lightning.pytorch==2.0.5
+seed_everything: 42
+trainer:
+    max_epochs: 2
+model:
+  path_name: ../tmp
+  model_name: bert-base-multilingual-cased
+  overall_dropout: 0.3
+  encoder_dropout: 0.5
+  warmup_steps: 0
+  overall_learning_rate: 0.005
+  encoder_model_learning_rate: 2.0e-05
+  pooling_layers: 4
+  checkpoint: null
+  use_pos: true
+  use_xpos: true
+  use_lemma: true
+  use_feats: true
+data:
+  language: el
+  train_dataset: ../../datasets/el_gdt-ud-toy/conllu
+  val_dataset: ../../datasets/el_gdt-ud-toy/conllu
+  batch_size: 4
+  lang_with_space: true
+  checkpoint: null
+output_file: null
+ckpt_path: null

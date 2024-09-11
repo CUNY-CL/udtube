@@ -8,17 +8,14 @@ import joblib
 from lightning.pytorch.core.optimizer import LightningOptimizer
 from torch.optim import Optimizer
 
-from mst import mst
-
 import edit_scripts
-from lightning.pytorch.cli import LightningCLI
+from lightning.pytorch.cli import LightningCLI, ArgsType
 from torch import nn, tensor, Tensor
 from torchmetrics.functional.classification import multiclass_accuracy
 
 from batch import ConlluBatch, TextBatch, CustomBatch
 from callbacks import CustomWriter
 from data_module import ConlluDataModule
-from biaffine_parser import BiaffineParser
 from typing import Union
 
 
@@ -62,8 +59,15 @@ class UDTubeCLI(LightningCLI):
     def before_instantiate_classes(self) -> None:
         if self.subcommand == "predict":
             self.trainer_defaults["callbacks"] = [CustomWriter(self.config.predict.output_file)]
-        elif self.subcommand == "test":
+        elif self.subcommand == "tests":
             self.trainer_defaults["callbacks"] = [CustomWriter(self.config.test.output_file)]
+
+
+def udtube_cli_main(args: ArgsType = None):
+    """
+        Python interface for running the CLI
+    """
+    UDTubeCLI(UDTube, ConlluDataModule, args=args)
 
 
 class UDTube(pl.LightningModule):
