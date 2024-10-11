@@ -261,8 +261,8 @@ language-specific tagging task using `model: use_xpos: false`, and so on.
 Dropout probability is specified using `model: dropout: ...`.
 
 The encoder has multiple layers. The input to the classifier consists of just
-the last few layers mean-pooled together. The number of layers used for
-mean-pooling is specified using `model: pooling_layers: ...`.
+the last few layers concatenated together. The number of layers used for
+pooling is specified using `model: pooling_layers: ...`.
 
 By default, lemmatization uses reverse-edit scripts. This is appropriate for
 predominantly suffixal languages, which are thought to represent the majority of

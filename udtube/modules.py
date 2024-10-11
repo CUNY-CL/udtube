@@ -1,8 +1,12 @@
 """UDTube modules.
 
-In the documentation below, N is the batch size, C is the number of classes
-for a classification head, and L is the maximum length (in subwords, tokens,
-or tags) of a sentence in the batch.
+In the documentation below:
+
+* C is the number of classes for a classification head
+* H is the size of the encoder's hidden layer (e.g., 768 in BERT)
+* L is the maximum length (in subwords, tokens, or tags) of a sentence in a batch
+* N is the batch size
+* P is the number of pooling layers
 """
 
 import logging
@@ -44,7 +48,7 @@ class UDTubeEncoder(lightning.LightningModule):
 
     @property
     def hidden_size(self) -> int:
-        return self.encoder.config.hidden_size
+        return self.encoder.config.hidden_size * self.pooling_layers
 
     def _group_embeddings(
         self,
@@ -140,11 +144,10 @@ class UDTubeEncoder(lightning.LightningModule):
             batch.tokens.input_ids.to(self.device),
             batch.tokens.attention_mask.to(self.device),
         ).hidden_states
-        # Stacks the pooling layers.
+        # Stacks the pooling layers -> N x P x L x H.
         x = torch.stack(x[-self.pooling_layers :])
-        # Averages them into one embedding layer; automatically squeezes the
-        # mean dimension.
-        x = torch.mean(x, dim=0)
+        # Flattens them -> N x L x (P * H).
+        x = torch.concat(torch.unbind(x, dim=0), dim=2)
         # Applies dropout.
         x = self.dropout_layer(x)
         # Maps from subword embeddings to word-level embeddings.
