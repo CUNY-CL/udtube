@@ -1,0 +1,54 @@
+method: random
+metric:
+  name: val_loss
+  goal: minimize
+parameters:
+  model.use_xpos:
+    value: false
+  model.dropout:
+    distribution: uniform
+    min: 0
+    max: 0.5
+  model.encoder:
+    values:
+      - google-bert/bert-base-multilingual-cased
+      - FacebookAI/xlm-roberta-base
+      - DeepPavlov/rubert-base-cased
+  model.pooling_layers:
+    distribution: q_uniform
+    q: 1
+    min: 1
+    max: 8
+  model.encoder_optimizer.class_path:
+    value: torch.optim.Adam
+  model.encoder_optimizer.init_args.lr:
+    distribution: log_uniform_values
+    min: 1e-06
+    max: 0.001
+  model.encoder_scheduler.class_path:
+    value: udtube.schedulers.WarmupInverseSquareRoot
+  model.encoder_scheduler.init_args.warmup_epochs:
+    distribution: q_uniform
+    q: 1
+    min: 1
+    max: 20
+  model.classifier_optimizer.class_path:
+    value: torch.optim.Adam
+  model.classifier_optimizer.init_args.lr:
+    distribution: log_uniform_values
+    min: 1e-05
+    max: 0.01
+  model.classifier_scheduler.class_path:
+    value: lightning.pytorch.cli.ReduceLROnPlateau
+  model.classifier_scheduler.init_args.monitor:
+    value: val_loss
+  model.classifier_scheduler.init_args.factor:
+    distribution: uniform
+    min: .1
+    max: .9
+  model.classifier_scheduler.init_args.patience:
+    value: 5
+  data.batch_size:
+    values:
+      - 8
+      - 16

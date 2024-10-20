@@ -1,15 +1,19 @@
-#!/usr/bin/env python
 """Edit script extraction and application.
-This is based on:
-Chrupała, G. 2014. Normalizing tweets with edit scripts and recurrent neural
-embeddings. In Proceedings of the 52nd Annual Meeting of the Association for
-Computational Linguistics (Volume 2: Short Papers), pages 680-686."""
 
-__author__ = "Kyle Gorman"
+Based on:
+
+    Chrupała, G. 2014. Normalizing tweets with edit scripts and recurrent
+    neural embeddings. In Proceedings of the 52nd Annual Meeting of the
+    Association for Computational Linguistics (Volume 2: Short Papers), pages
+    680-686.
+"""
+
+# TODO(#9): consider adding other edit script implementations.
+
+from __future__ import annotations
 
 import dataclasses
 import difflib
-
 from typing import Dict, List
 
 
@@ -64,7 +68,7 @@ class EditScript:
         return self.SEP.join(pieces)
 
     @classmethod
-    def fromtag(cls, tag: str) -> "EditScript":
+    def fromtag(cls, tag: str) -> EditScript:
         script = cls.__new__(cls)
         script._ops = []
         for opstr in tag.split(cls.SEP):

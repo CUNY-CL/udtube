@@ -8,7 +8,7 @@ release of ud_compatibility will back off from these strong assumptions.
 
 Sample usage:
 
-    ./convert_to_um.py --language rus 
+    ./convert_to_um.py --language rus
 """
 
 import argparse

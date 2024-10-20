@@ -1,20 +1,20 @@
-The files in this folder are example yaml configs that can be used for three different subcommands UDTube inherits from the LightningCLI. 
+The files in this folder are example YAML configuration files showing UDTube's
+use with English and Russian data sets from [Universal
+Dependencies](https://universaldependencies.org/).
 
-These subcommands are 
-- "fit"
-- "test"
-- "predict"
+Data sets:
 
-The minimal run for the software only requires changing the name of the parameters under the "model" and "data". 
+-   [English Web
+    Treebank](https://github.com/UniversalDependencies/UD_English-EWT/tree/master)
+-   [SynTagRus](https://github.com/UniversalDependencies/UD_Russian-SynTagRus/tree/master)
 
-To read more about the specific parameters for each subcommand you can use the terminal command:
+Pre-trained encoders:
 
-```
-$ python3 udtube.py <subcommand> --help
-```
-
-Alternatively, if a new yaml config is needed for any reason (for example, if you want to use the "validate" subcommand supported by LightningCLI)
-
-```
-$ python3 udtube.py <subcommand> --print_config                                                          
-```
+-   [BERT
+    (`google-bert/bert-base-cased`)](https://huggingface.co/google-bert/bert-base-cased)
+-   [mBERT
+    (`google-bert/bert-base-multilingual-cased`)](https://huggingface.co/google-bert/bert-base-multilingual-cased)
+-   [XLM-RoBERTa
+    (`FacebookAI/xlm-roberta-base`)](https://huggingface.co/FacebookAI/xlm-roberta-base)
+-   [RuBERT
+    (`DeepPavlov/rubert-base-cased`)](https://huggingface.co/DeepPavlov/rubert-base-cased)

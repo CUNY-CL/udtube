@@ -16,7 +16,6 @@ import logging
 
 import transformers
 
-
 # The keys here are assumed to be prefixes of full name and should include
 # the organization name, a forward slash, and the shared prefix of the model.
 
@@ -73,7 +72,7 @@ def load(model_name: str, dropout: float) -> transformers.AutoModel:
             __file__,
         )
     # Uses this as the default name.
-    # TODO: improve this conditional if kwargs not related to dropout are
+    # TODO: Improve this conditional if kwargs not related to dropout are
     # also passed to the encoder loader.
     if not kwargs:
         kwargs["hidden_dropout_prob"] = dropout

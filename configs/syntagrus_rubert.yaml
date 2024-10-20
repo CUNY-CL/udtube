@@ -1,0 +1,61 @@
+seed_everything: 1995
+trainer:
+  max_epochs: 100
+  max_time: 00:06:00:00
+  callbacks:
+    - class_path: lightning.pytorch.callbacks.LearningRateMonitor
+      init_args:
+        logging_interval: epoch
+    - class_path: lightning.pytorch.callbacks.EarlyStopping
+      init_args:
+        monitor: val_loss
+        patience: 10
+        verbose: true
+  logger:
+    - class_path: lightning.pytorch.loggers.CSVLogger
+      init_args:
+        save_dir: /Users/Shinji/UD_Russian-SynTagRus/models
+    - class_path: lightning.pytorch.loggers.wandb.WandbLogger
+      init_args:
+        entity: NERV
+        project: unit1
+        save_dir: /Users/Shinji/UD_Russian-SynTagRus/models
+model:
+  dropout: 0.4
+  encoder: DeepPavlov/rubert
+  pooling_layers: 4
+  reverse_edits: true
+  use_upos: true
+  use_xpos: false
+  use_lemma: true
+  use_feats: true
+  encoder_optimizer:
+    class_path: torch.optim.Adam
+    init_args:
+      lr: 1e-6
+  encoder_scheduler:
+    class_path: udtube.schedulers.WarmupInverseSquareRoot
+    init_args:
+      warmup_epochs: 5
+  classifier_optimizer:
+    class_path: torch.optim.Adam
+    init_args:
+      lr: 1e-3
+  classifier_scheduler:
+    class_path: lightning.pytorch.cli.ReduceLROnPlateau
+    init_args:
+      monitor: val_loss
+      factor: 0.1
+data:
+  model_dir: /Users/Shinji/UD_Russian-SynTagRus/models
+  train: /Users/Shinji/UD_Russian-SynTagRus/ru_syntagrus-ud-train.conllu
+  val: /Users/Shinji/UD_Russian-SynTagRus/ru_syntagrus-ud-dev.conllu
+  test: /Users/Shinji/UD_Russian-SynTagRus/ru_syntagrus-ud-test.conllu
+  predict: /Users/Shinji/UD_Russian-SynTagRus/ru_syntagrus-ud-test.conllu
+  batch_size: 32
+checkpoint:
+  filename: "model-{epoch:03d}-{val_loss:.4f}"
+  monitor: val_loss
+  verbose: true
+prediction:
+  path: /Users/Shinji/UD_Russian-SynTagRus/predictions.conllu
