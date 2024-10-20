@@ -57,5 +57,5 @@ checkpoint:
   filename: "model-{epoch:03d}-{val_loss:.4f}"
   monitor: val_loss
   verbose: true
-predict:
+prediction:
   path: /Users/Shinji/UD_Russian-SynTagRus/predictions.conllu

@@ -7,6 +7,19 @@ from lightning.pytorch import callbacks as pytorch_callbacks, cli
 from . import callbacks, data, models, trainers
 
 
+def udtube_python_interface(args: cli.ArgsType = None):
+    """
+        Interface to use models through python.
+    """
+    UDTubeCLI(
+        models.UDTube,
+        data.DataModule,
+        auto_configure_optimizers=False,
+        trainer_class=trainers.Trainer,
+        args=args
+    )
+
+
 class UDTubeCLI(cli.LightningCLI):
     """The UDTube CLI interface.
 

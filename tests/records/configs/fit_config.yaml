@@ -3,25 +3,27 @@ seed_everything: 42
 trainer:
     max_epochs: 2
 model:
-  path_name: ../tmp
-  model_name: bert-base-multilingual-cased
-  overall_dropout: 0.3
-  encoder_dropout: 0.5
-  warmup_steps: 0
-  overall_learning_rate: 0.005
-  encoder_model_learning_rate: 2.0e-05
+  encoder: google-bert/bert-base-multilingual-cased
   pooling_layers: 4
-  checkpoint: null
-  use_pos: true
+  reverse_edits: true
+  use_upos: true
   use_xpos: true
   use_lemma: true
   use_feats: true
+  encoder_optimizer:
+    class_path: torch.optim.Adam
+    init_args:
+      lr: 1e-6
 data:
-  language: el
-  train_dataset: ../../datasets/el_gdt-ud-toy/conllu
-  val_dataset: ../../datasets/el_gdt-ud-toy/conllu
-  batch_size: 4
-  lang_with_space: true
-  checkpoint: null
-output_file: null
-ckpt_path: null
+  model_dir: records/tmp
+  train: datasets/el_gdt-ud-toy.conllu
+  val: datasets/el_gdt-ud-toy.conllu
+  test: datasets/el_gdt-ud-toy.conllu
+  predict: datasets/el_gdt-ud-toy.conllu
+  batch_size: 8
+checkpoint:
+  filename: "model-{epoch:03d}-{val_loss:.4f}"
+  monitor: val_loss
+  verbose: true
+prediction:
+  path: tmp/predictions.conllu
