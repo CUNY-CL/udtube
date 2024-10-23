@@ -16,14 +16,13 @@ model:
       lr: 1e-6
 data:
   model_dir: records/tmp
-  train: datasets/el_gdt-ud-toy.conllu
-  val: datasets/el_gdt-ud-toy.conllu
-  test: datasets/el_gdt-ud-toy.conllu
-  predict: datasets/el_gdt-ud-toy.conllu
+  train: datasets/toy_datasets/el_gdt-ud-toy.conllu
+  val: datasets/toy_datasets/el_gdt-ud-toy.conllu
+  test: datasets/toy_datasets/el_gdt-ud-toy.conllu
+  predict: datasets/toy_datasets/el_gdt-ud-toy.conllu
   batch_size: 8
 checkpoint:
   filename: "model-{epoch:03d}-{val_loss:.4f}"
   monitor: val_loss
   verbose: true
-prediction:
-  path: tmp/predictions.conllu
+# prediction.path is missing as it is set when called!

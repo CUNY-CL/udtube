@@ -1,0 +1,28 @@
+# lightning.pytorch==2.0.5
+seed_everything: 42
+trainer:
+    max_epochs: 2
+model:
+  encoder: google-bert/bert-base-multilingual-cased
+  pooling_layers: 4
+  reverse_edits: true
+  use_upos: true
+  use_xpos: true
+  use_lemma: true
+  use_feats: true
+  encoder_optimizer:
+    class_path: torch.optim.Adam
+    init_args:
+      lr: 1e-6
+data:
+  model_dir: records/tmp
+  train: datasets/toy_datasets/en_ewt-ud-toy.conllu
+  val: datasets/toy_datasets/en_ewt-ud-toy.conllu
+  test: datasets/toy_datasets/en_ewt-ud-toy.conllu
+  predict: datasets/toy_datasets/en_ewt-ud-toy.conllu
+  batch_size: 8
+checkpoint:
+  filename: "model-{epoch:03d}-{val_loss:.4f}"
+  monitor: val_loss
+  verbose: true
+# prediction.path is missing as it is set when called!
