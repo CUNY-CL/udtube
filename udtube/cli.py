@@ -8,9 +8,7 @@ from . import callbacks, data, models, trainers
 
 
 def udtube_python_interface(args: cli.ArgsType = None):
-    """
-        Interface to use models through python.
-    """
+    """Interface to use models through Python."""
     UDTubeCLI(
         models.UDTube,
         data.DataModule,
