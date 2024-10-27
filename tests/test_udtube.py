@@ -74,7 +74,7 @@ def run_models(configs_path: str, prediction_dir: str, suffix: str) -> None:
         if name_prefix_match:
             name_prefix = name_prefix_match.group(0)
         else:
-            raise MisconfigurationError(f"No file in target dir with expected prefix")
+            raise MisconfigurationError("No file in target dir with expected prefix")
         pred_file_name = f"{prediction_dir}/{name_prefix}{suffix}"
         logging.info(
             f"running {yaml_config} and recording test results to {pred_file_name}"
@@ -108,7 +108,7 @@ def run_comparison(prediction_dir: str) -> None:
             )
         baseline_file = baselines_files[0]
         with open(current_file) as f1, open(baseline_file) as f2:
-            diff = list(difflib.unified_diff(f1.readlines(), f2.readlines(), n=1))
+            diff = list(difflib.unified_diff(f1.readlines(), f2.readlines(), fromfile=current_file, tofile=baseline_file, n=1))
         if not diff:
             continue
         else:

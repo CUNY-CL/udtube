@@ -66,14 +66,3 @@ workflows:
           matrix:
             parameters:
               python-version: ["3.9", "3.10", "3.11", "3.12"]
-  run-diff-tests:
-    jobs:
-      docker:
-        - image: cimg/python:3.12
-      steps:
-        - run:
-            name: Requirements install
-            command: pip install -r requirements.txt
-        - run:
-            name: Running Diff tests
-            command: python ../udtube_package/tests/test_udtube.py
