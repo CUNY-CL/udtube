@@ -8,7 +8,7 @@ from typing import Iterable, List
 import torch
 
 from . import edit_scripts, indexes
-from .. import defaults
+from .. import defaults, special
 
 
 @dataclasses.dataclass
@@ -143,11 +143,12 @@ class Mapper:
         Yields:
             List[str]: decoded symbols.
         """
-        return [
-            vocabulary.get_symbol(c)
-            for c in indices
-            if c not in vocabulary.special_idx
-        ]
+        symbols = []
+        for idx in indices:
+            if idx == special.PAD_IDX:
+                return symbols
+            symbols.append(vocabulary.get_symbol(idx))
+        return symbols
 
     def decode_upos(self, indices: torch.Tensor) -> List[str]:
         """Decodes an upos tensor.

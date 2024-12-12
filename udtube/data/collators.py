@@ -6,7 +6,8 @@ import torch
 from torch import nn
 import transformers
 
-from . import batches, datasets, indexes
+from .. import special
+from . import batches, datasets
 
 
 class Tokenizer:
@@ -46,25 +47,19 @@ class Collator:
 
     Args:
         tokenizer: transformer autotokenizer.
-        index: the index.
     """
 
-    def __init__(
-        self, tokenizer: transformers.AutoTokenizer, index: indexes.Index
-    ):
+    def __init__(self, tokenizer: transformers.AutoTokenizer):
         self.tokenizer = Tokenizer(tokenizer)
-        self.index = index
 
     @staticmethod
     def pad_tensors(
         tensorlist: List[torch.Tensor],
-        pad_idx: int = 0,
     ) -> torch.Tensor:
         """Pads and stacks a list of tensors.
 
         Args:
             tensorlist: a list of tensors to be padded.
-            pad_idx: padding index to use; defaults to 0.
 
         Returns:
             The padded and stacked tensor.
@@ -73,7 +68,7 @@ class Collator:
         return torch.stack(
             [
                 nn.functional.pad(
-                    tensor, (0, pad_max - len(tensor)), value=pad_idx
+                    tensor, (0, pad_max - len(tensor)), value=special.PAD_IDX
                 )
                 for tensor in tensorlist
             ]
@@ -86,32 +81,22 @@ class Collator:
             # Looks ugly, but this just pads and stacks data for whatever
             # classification tasks are enabled.
             upos=(
-                self.pad_tensors(
-                    [item.upos for item in itemlist], self.index.upos.pad_idx
-                )
+                self.pad_tensors([item.upos for item in itemlist])
                 if itemlist[0].use_upos
                 else None
             ),
             xpos=(
-                self.pad_tensors(
-                    [item.xpos for item in itemlist], self.index.xpos.pad_idx
-                )
+                self.pad_tensors([item.xpos for item in itemlist])
                 if itemlist[0].use_xpos
                 else None
             ),
             lemma=(
-                self.pad_tensors(
-                    [item.lemma for item in itemlist],
-                    self.index.lemma.pad_idx,
-                )
+                self.pad_tensors([item.lemma for item in itemlist])
                 if itemlist[0].use_lemma
                 else None
             ),
             feats=(
-                self.pad_tensors(
-                    [item.feats for item in itemlist],
-                    self.index.feats.pad_idx,
-                )
+                self.pad_tensors([item.feats for item in itemlist])
                 if itemlist[0].use_feats
                 else None
             ),

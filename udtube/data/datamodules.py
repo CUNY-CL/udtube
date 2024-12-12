@@ -181,10 +181,7 @@ class DataModule(lightning.LightningDataModule):
         assert self.train is not None, "no train path"
         return data.DataLoader(
             self._conllu_map_dataset(self.train),
-            collate_fn=collators.Collator(
-                self.tokenizer,
-                self.index,
-            ),
+            collate_fn=collators.Collator(self.tokenizer),
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=1,
@@ -195,10 +192,7 @@ class DataModule(lightning.LightningDataModule):
         assert self.train is not None, "no val path"
         return data.DataLoader(
             self._conllu_map_dataset(self.val),
-            collate_fn=collators.Collator(
-                self.tokenizer,
-                self.index,
-            ),
+            collate_fn=collators.Collator(self.tokenizer),
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=1,
@@ -210,7 +204,7 @@ class DataModule(lightning.LightningDataModule):
         return data.DataLoader(
             # This one uses an iterative data loader instead.
             datasets.ConlluIterDataset(self.predict),
-            collate_fn=collators.Collator(self.tokenizer, self.index),
+            collate_fn=collators.Collator(self.tokenizer),
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=1,
@@ -221,10 +215,7 @@ class DataModule(lightning.LightningDataModule):
         assert self.test is not None, "no test path"
         return data.DataLoader(
             self._conllu_map_dataset(self.test),
-            collate_fn=collators.Collator(
-                self.tokenizer,
-                self.index,
-            ),
+            collate_fn=collators.Collator(self.tokenizer),
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=1,
