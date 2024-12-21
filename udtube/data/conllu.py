@@ -3,9 +3,10 @@
 This is roughly compatible with the third-party package `conllu`, though it
 only has features we care about."""
 
+import collections
 import re
 
-from typing import Dict, Iterator, List, Optional, TextIO, Tuple
+from typing import Dict, Iterable, Iterator, Optional, TextIO, Tuple
 
 
 # From: https://universaldependencies.org/format.html.
@@ -23,19 +24,21 @@ _fieldnames = [
 ]
 
 
-class TokenList:
+class TokenList(collections.UserList):
     """TokenList object.
+
+    This behaves like a list of tokens (of type Dict[str, str]) with
+    optional associated metadata.
 
     Args:
         tokens: List of tokens.
         metadata: ordered dictionary of string/key pairs.
     """
 
-    tokens: List[Dict[str, str]]
     metadata: Dict[str, Optional[str]]
 
-    def __init__(self, tokens: List[Dict[str, str]], metadata=None):
-        self.tokens = tokens
+    def __init__(self, tokens: Iterable[Dict[str, str]], metadata=None):
+        super().__init__(tokens)
         self.metadata = metadata if metadata is not None else {}
 
     def serialize(self) -> str:
@@ -46,27 +49,12 @@ class TokenList:
                 line_buf.append(f"# {key} = {value}")
             else:  # `newpar` etc.
                 line_buf.append(f"# {key}")
-        for token in self.tokens:
+        for token in self:
             col_buf = []
             for key in _fieldnames:
                 col_buf.append(token.get(key, "_"))
             line_buf.append("\t".join(str(cell) for cell in col_buf))
         return "\n".join(line_buf) + "\n"
-
-    def __getitem__(self, index: int) -> Dict[str, str]:
-        return self.tokens[index]
-
-    def __len__(self) -> int:
-        return len(self.tokens)
-
-    def __iter__(self) -> Iterator[Dict[str, str]]:
-        return iter(self.tokens)
-
-    def __setitem__(self, index: int, value: Dict[str, str]) -> None:
-        self.tokens[index] = value
-
-    def append(self, token: Dict[str, str]) -> None:
-        self.tokens.append(token)
 
 
 # Parsing.
