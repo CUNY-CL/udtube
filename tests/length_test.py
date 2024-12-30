@@ -55,7 +55,7 @@ class LengthTest(unittest.TestCase):
                 "predict",
                 f"--ckpt_path={checkpoint_path}",
                 f"--config={CONFIG_PATH}",
-                f"--data.model_dir={model_dir}"
+                f"--data.model_dir={model_dir}",
             ]
         )
 
