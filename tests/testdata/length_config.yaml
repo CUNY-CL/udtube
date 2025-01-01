@@ -1,0 +1,17 @@
+checkpoint:
+  monitor: val_loss
+  save_last: true
+data:
+  train: tests/testdata/toolong.conllu
+  val: tests/testdata/toolong.conllu
+  predict: tests/testdata/toolong.conllu
+  batch_size: 1
+model:
+  # We reuse this because other tests need it; it supports up to 512 tokens
+  # and the sentence in `toolong.conllu` is 585 tokens.
+  encoder: google-bert/bert-base-cased
+seed_everything: 42
+trainer:
+  accelerator: cpu  # Because that's what CircleCI has.
+  enable_progress_bar: false
+  max_epochs: 1
