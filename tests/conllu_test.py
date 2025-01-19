@@ -6,6 +6,7 @@ import unittest
 
 from udtube.data import conllu
 
+
 # Comment just to open a dummy PR
 class IDTest(unittest.TestCase):
 
@@ -212,7 +213,6 @@ class TokenListTest(unittest.TestCase):
 
 
 class ParseTest(unittest.TestCase):
-
     STRING = """# newpar
 # sent_id = weblog-blogspot.com_nominations_20041117172713_ENG_20041117_172713-0001
 # text = From the AP comes this story :
