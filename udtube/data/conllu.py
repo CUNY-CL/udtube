@@ -20,50 +20,89 @@ class Error(Exception):
 class ID:
     """Representation of a CoNLL-U sentence ID.
 
-    Most of the time this is just a single integer, but MWEs use two integers
-    to represent a span of tokens.
+    Most of the time this is just a single integer. Two other possibilities
+    exist, however:
+
+    * decimals: represented by an integer and a second integer > 0.
+    * MWEs: represented by two integers denoting a span of tokens.
+
+    The decimal dummy value is 0; the MWE dummy value (for the upper element
+    of the span) is the same as the lower value.
 
     Args:
         lower (int): the lower or sole index.
+        decimal (int): a decimal (> 0) on the sole index.
         upper (int, optional): the upper index, for MWEs.
+
+    Raises:
+        Error: decimal <= 0.
+        Error: lower > upper.
     """
 
     lower: int
+    decimal: int
     upper: int
 
-    def __init__(self, lower: int, upper: Optional[int] = None):
+    def __init__(
+        self,
+        lower,
+        *,
+        decimal: Optional[int] = None,
+        upper: Optional[int] = None,
+    ):
         self.lower = lower
+        if decimal is None:
+            self.decimal = 0
+        else:
+            self.decimal = int(decimal)
+            if self.decimal <= 0:
+                raise Error(f"decimal {decimal} <= 0")
         self.upper = self.lower if upper is None else upper
         if self.lower > self.upper:
             raise Error(f"lower {lower} > upper {upper}")
 
     @classmethod
     def parse_from_string(cls, string: str) -> ID:
-        if match := re.fullmatch(r"(\d+)-(\d+)", string):
-            return cls(int(match.group(1)), int(match.group(2)))
-        elif match := re.fullmatch(r"\d+", string):
-            return cls(int(match.group()))
+        if mtch := re.fullmatch(r"(\d+)-(\d+)", string):
+            return cls(int(mtch.group(1)), upper=int(mtch.group(2)))
+        elif mtch := re.fullmatch(r"(\d+)\.(\d+)", string):
+            return cls(int(mtch.group(1)), decimal=mtch.group(2))
+        elif mtch := re.fullmatch(r"\d+", string):
+            return cls(int(mtch.group()))
         else:
-            raise Error(f"Unable to parse ID {str}")
+            raise Error(f"Unable to parse ID {string}")
 
     def __str__(self) -> str:
         if self.is_mwe:
             return f"{self.lower}-{self.upper}"
-        return str(self.lower)
+        elif self.is_decimal:
+            return f"{self.lower}.{self.decimal}"
+        else:
+            return str(self.lower)
 
     def __len__(self) -> int:
         return 1 + self.upper - self.lower
 
     def __eq__(self, other: ID) -> bool:
-        return self.lower == other.lower and self.upper == other.upper
+        return (
+            self.lower == other.lower
+            and self.decimal == other.decimal
+            and self.upper == other.upper
+        )
+
+    def get_slice(self) -> slice:
+        if self.is_decimal:
+            raise ValueError(f"cannot convert decimal ID {self!s} to slice")
+        # We add one to the right end since upper bounds are open in Python.
+        return slice(self.lower, self.upper + 1)
 
     @property
     def is_mwe(self) -> bool:
         return len(self) > 1
 
-    def get_slice(self) -> slice:
-        # We add one to the right end since upper bounds are open in Python.
-        return slice(self.lower, self.upper + 1)
+    @property
+    def is_decimal(self) -> bool:
+        return self.decimal > 0
 
 
 # TODO: when dropping support for Python 3.9, add `slots=True`.

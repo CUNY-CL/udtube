@@ -4,6 +4,8 @@ import io
 import tempfile
 import unittest
 
+from parameterized import parameterized
+
 from udtube.data import conllu
 
 
@@ -13,31 +15,51 @@ class IDTest(unittest.TestCase):
         swe = conllu.ID(3)
         self.assertEqual(len(swe), 1)
         self.assertFalse(swe.is_mwe)
+        self.assertFalse(swe.is_decimal)
         self.assertEqual(str(swe), "3")
 
-    def test_swe_roundtrip(self):
-        swe = conllu.ID(3)
-        self.assertEqual(swe, conllu.ID.parse_from_string(str(swe)))
+    @parameterized.expand(
+        [
+            conllu.ID(3),
+            conllu.ID(2, upper=3),
+            conllu.ID(2, decimal=1),
+        ],
+    )
+    def test_roundtrip(self, the_id: conllu.ID):
+        self.assertEqual(the_id, conllu.ID.parse_from_string(str(the_id)))
 
     def test_mwe(self):
-        mwe = conllu.ID(2, 3)
+        mwe = conllu.ID(2, upper=3)
         self.assertEqual(len(mwe), 2)
         self.assertTrue(mwe.is_mwe)
+        self.assertFalse(mwe.is_decimal)
         self.assertEqual(str(mwe), "2-3")
 
-    def test_mwe_roundtrip(self):
-        mwe = conllu.ID(2, 3)
-        self.assertEqual(mwe, conllu.ID.parse_from_string(str(mwe)))
-
     def test_mwe_non_equivalence(self):
-        mwe1 = conllu.ID(2, 3)
-        mwe2 = conllu.ID(3, 4)
+        mwe1 = conllu.ID(2, upper=3)
+        mwe2 = conllu.ID(3, upper=4)
         self.assertNotEqual(mwe1, mwe2)
 
     def test_mwe_swe_non_equivalence(self):
-        mwe = conllu.ID(2, 3)
+        mwe = conllu.ID(2, upper=3)
         swe = conllu.ID(2)
         self.assertNotEqual(mwe, swe)
+
+    def test_decimal(self):
+        decimal = conllu.ID(2, decimal=1)
+        self.assertFalse(decimal.is_mwe)
+        self.assertTrue(decimal.is_decimal)
+        self.assertEqual(str(decimal), "2.1")
+
+    def test_decimal_non_equivalence(self):
+        decimal1 = conllu.ID(2, decimal=1)
+        decimal2 = conllu.ID(2, decimal=2)
+        self.assertNotEqual(decimal1, decimal2)
+
+    def test_decimal_swe_nonequivalence(self):
+        decimal = conllu.ID(2, decimal=1)
+        swe = conllu.ID(2)
+        self.assertNotEqual(decimal, swe)
 
     def test_bad_parse(self):
         with self.assertRaises(conllu.Error):
@@ -64,7 +86,7 @@ class TokenTest(unittest.TestCase):
     @staticmethod
     def make_mwe_token() -> conllu.Token:
         return conllu.Token(
-            conllu.ID(2, 3),
+            conllu.ID(2, upper=3),
             "don't",
             "_",
             "_",
@@ -171,7 +193,7 @@ class TokenListTest(unittest.TestCase):
                     "_",
                 ),
                 conllu.Token(
-                    conllu.ID(2, 3),
+                    conllu.ID(2, upper=3),
                     "don't",
                     "_",
                     "_",
