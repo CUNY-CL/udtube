@@ -3,7 +3,7 @@ name = "udtube"
 version = "0.1.2"
 description = "Neural morphological analysis"
 readme = "README.md"
-requires-python = ">=3.9,<=3.13"
+requires-python = ">=3.9,<3.14"
 authors = [
     { name = "Daniel Yakubov", email = "danielyak98@gmail.com" },
     { name = "Kyle Gorman", email = "kylebgorman@gmail.com" },
@@ -77,7 +77,7 @@ exclude = ["configs*",  "examples*", "scripts*" ]
 [tool.poetry.dependencies]
 jsonargparse = { version = "^4.32.0", extras = ["signatures"] }
 lightning = "^2.4.0"
-python = ">=3.9,<=3.13"
+python = ">=3.9,<3.14"
 pyyaml = "^6.0"
 transformers = "^4.44.0"
 torch = "^2.4.0"
