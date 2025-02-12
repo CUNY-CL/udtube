@@ -19,10 +19,8 @@ import util
 warnings.filterwarnings("ignore", ".*is a wandb run already in progress.*")
 
 
-def train_sweep(
-    config: Dict[str, Any], temp_config: TextIO, argv: List[str]
-) -> None:
-    """Runs a single training run.
+def run(config: Dict[str, Any], temp_config: TextIO, argv: List[str]) -> None:
+    """A single training run.
 
     Args:
         config: path to UDTube YAML config file.
@@ -30,18 +28,6 @@ def train_sweep(
         argv: command-line arguments.
     """
     populate_config(config, temp_config)
-    run_sweep(argv)
-
-
-def run_sweep(argv: List[str]) -> None:
-    """Actually runs the sweep.
-
-    Args:
-        argv: command-line arguments.
-
-    We encapsulate each run by using a separate subprocess, which ought to
-    ensure that memory is returned (etc.).
-    """
     process = subprocess.Popen(argv, stderr=subprocess.PIPE, text=True)
     for line in process.stderr:
         logging.info(line.rstrip())
@@ -77,7 +63,7 @@ def main(args: argparse.Namespace) -> None:
             sweep_id=args.sweep_id,
             entity=args.entity,
             project=args.project,
-            function=functools.partial(train_sweep, config, temp_config, argv),
+            function=functools.partial(run, config, temp_config, argv),
             count=args.count,
         )
     except Exception:
