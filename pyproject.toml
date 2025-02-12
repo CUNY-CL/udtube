@@ -1,19 +1,19 @@
 [build-system]
-requires = ["poetry>=1.8"]
+requires = ["poetry-core>=2.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.setuptools]
 include-package-data = false
 
-[tool.poetry]
+[project]
 name = "udtube"
 version = "0.1.1"
-description = "Neural morphological analysis"
-readme = "README.md"
 license = "Apache-2.0"
+readme = "README.md"
+requires-python = ">=3.9,<=3.13"
 authors = [
-    "Daniel Yakubov <danielyak98@gmail.com>",
-    "Kyle Gorman <kylebgorman@gmail.com"
+    { name = "Daniel Yakubov", email = "danielyak98@gmail.com" },
+    { name = "Kyle Gorman", email = "kylebgorman@gmail.com" },
 ]
 keywords = [
     "computational linguistics",
@@ -33,18 +33,19 @@ classifiers = [
     "Operating System :: OS Independent",
     "Topic :: Text Processing :: Linguistic",
 ]
+dependencies = [
+    "jsonargparse[signatures]>=4.28.0,<5.0.0",
+    "lightning>=2.4.0,<3.0.0",
+    "pyyaml>=6.0,<7.0",
+    "transformers>=4.44.0,<5.0.0",
+    "torch>=2.4.0,<3.0.0",
+    "torchmetrics>=1.4.0.post0,<2.0.0",
+    "wandb>=0.18.0,<1.0.0",
+]
+
+[tool.poetry]
 include = ["udtube*"]
 exclude = ["configs*",  "examples*", "scripts*" ]
-
-[tool.poetry.dependencies]
-jsonargparse = { version = "^4.32.0", extras = ["signatures"] }
-lightning = "^2.4.0"
-python = "^3.9"
-pyyaml = "^6.0"
-transformers = "^4.44.0"
-torch = "^2.4.0"
-torchmetrics = "^1.4.0.post0"
-wandb = "^0.18.0"
 
 [tool.poetry.group.dev]
 optional = true
@@ -53,7 +54,7 @@ optional = true
 black = "^24.4.2"
 build = "^1.2.1"
 flake8 = "^7.1.0"
-twine = "^6.0.0"
+twine = "^6.1.0"
 
 [tool.poetry.group.test]
 optional = true
