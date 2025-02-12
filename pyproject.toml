@@ -7,8 +7,8 @@ include-package-data = false
 
 [project]
 name = "udtube"
-version = "0.1.1"
-license = "Apache-2.0"
+version = "0.1.2"
+description = "Neural morphological analysis"
 readme = "README.md"
 requires-python = ">=3.9,<=3.13"
 authors = [
