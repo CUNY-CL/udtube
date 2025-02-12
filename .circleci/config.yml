@@ -29,6 +29,7 @@ jobs:
       - run:
           name: Build source distribution and install package from it
           command: |
+              poetry lock --no-update && \
               poetry install --with=dev,test && \
               poetry build && \
               pip install dist/$(ls dist/ | grep .whl)
