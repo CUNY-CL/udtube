@@ -12,8 +12,8 @@ jobs:
       - checkout
       - run:
           command: |
-            poetry lock --no-update && \
-            poetry install --with=dev,test
+              poetry lock && \
+              poetry install --with=dev,test
       - run:
           command: << parameters.command-run >>
 
@@ -23,7 +23,7 @@ jobs:
         type: string
     docker:
       - image: cimg/python:<< parameters.python-version >>
-        auth:
+        #auth:
         #  username: $DOCKERHUB_USERNAME
         #  password: $DOCKERHUB_PASSWORD
     steps:
@@ -31,7 +31,6 @@ jobs:
       - run:
           name: Build source distribution and install package from it
           command: |
-              poetry lock --no-update && \
               poetry install --with=dev,test && \
               poetry build && \
               pip install dist/$(ls dist/ | grep .whl)
@@ -55,10 +54,17 @@ workflows:
       - pre-build:
           name: flake8
           command-run: poetry run flake8 --ignore E203,W503 .
+      - pre-build:
+          name: twine
+          command-run: |
+              poetry build && \
+              poetry run twine check dist/`ls dist/ | grep .tar.gz` && \
+              poetry run twine check dist/`ls dist/ | grep .whl`
       - build-python:
           requires:
             - black
             - flake8
+            - twine
           matrix:
             parameters:
               python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
