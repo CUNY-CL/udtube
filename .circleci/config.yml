@@ -11,27 +11,28 @@ jobs:
     steps:
       - checkout
       - run:
-          command: poetry install --with=dev,test
+          command: |
+              poetry lock && \
+              poetry install --only=dev
       - run:
           command: << parameters.command-run >>
 
-  build-python:
+  build-test-python:
     parameters:
       python-version:
         type: string
     docker:
       - image: cimg/python:<< parameters.python-version >>
-        #auth:
-        #  username: $DOCKERHUB_USERNAME
-        #  password: $DOCKERHUB_PASSWORD
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_PASSWORD
     steps:
       - checkout
       - run:
-          name: Build source distribution and install package from it
+          name: Installs package
           command: |
-              poetry install --with=dev,test && \
-              poetry build && \
-              pip install dist/$(ls dist/ | grep .whl)
+              poetry lock && \
+              poetry install --with=dev,test
       - run:
           name: Show installed Python packages
           command: poetry show
@@ -55,10 +56,10 @@ workflows:
       - pre-build:
           name: twine
           command-run: |
-            poetry build && \
-            poetry run twine check dist/`ls dist/ | grep .tar.gz` && \
-            poetry run twine check dist/`ls dist/ | grep .whl`
-      - build-python:
+              poetry build && \
+              poetry run twine check dist/`ls dist/ | grep .tar.gz` && \
+              poetry run twine check dist/`ls dist/ | grep .whl`
+      - build-test-python:
           requires:
             - black
             - flake8

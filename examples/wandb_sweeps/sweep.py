@@ -5,10 +5,10 @@ import argparse
 import functools
 import logging
 import subprocess
-import sys
 import tempfile
 import traceback
 import warnings
+
 from typing import Any, Dict, List, TextIO
 
 import wandb
@@ -51,13 +51,13 @@ def populate_config(
     yaml.dump(config, temp_config_handle)
 
 
-def main(args: argparse.Namespace) -> None:
+def main(args: argparse.Namespace, argv: List[str]) -> None:
     with open(args.config, "r") as source:
         config = yaml.safe_load(source)
     # TODO: Consider enabling the W&B logger; we are not sure if things will
     # unless this is configured.
     temp_config = tempfile.NamedTemporaryFile(mode="w", suffix=".yaml")
-    argv = ["udtube", "fit", "--config", temp_config.name, *sys.argv[1:]]
+    argv = ["udtube", "fit", "--config", temp_config.name, *argv]
     try:
         wandb.agent(
             sweep_id=args.sweep_id,
@@ -89,8 +89,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--count", type=int, help="Number of runs to perform.")
     parser.add_argument("--config", required=True)
-    # We pass the known args to main but remove them from ARGV.
-    # See: https://docs.python.org/3/library/argparse.html#partial-parsing
-    # This allows the user to override config arguments with CLI arguments.
-    args, sys.argv[1:] = parser.parse_known_args()
-    main(args)
+    # We separate out the args declared above, which control the sweep itself,
+    # and all others, which are passed to the subprocess as is.
+    args, argv = parser.parse_known_args()
+    main(args, argv)

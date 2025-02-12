@@ -29,9 +29,10 @@ class UDTubeTest(unittest.TestCase):
         )
 
     def assertFileIdentity(self, actual_path: str, expected_path: str):
-        with open(actual_path, "r") as actual, open(
-            expected_path, "r"
-        ) as expected:
+        with (
+            open(actual_path, "r") as actual,
+            open(expected_path, "r") as expected,
+        ):
             diff = list(
                 difflib.unified_diff(
                     actual.readlines(),
