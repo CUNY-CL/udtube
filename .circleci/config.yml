@@ -29,12 +29,10 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Build source distribution and install package from it
+          name: Installs package
           command: |
               poetry lock && \
-              poetry install --with=dev,test && \
-              poetry build && \
-              pip install dist/$(ls dist/ | grep .whl)
+              poetry install --with=dev,test
       - run:
           name: Show installed Python packages
           command: poetry show
