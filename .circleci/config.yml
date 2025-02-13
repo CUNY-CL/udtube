@@ -13,7 +13,7 @@ jobs:
       - run:
           command: |
               poetry lock && \
-              poetry install --with=dev,test
+              poetry install --only=dev
       - run:
           command: << parameters.command-run >>
 
