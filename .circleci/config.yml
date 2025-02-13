@@ -17,7 +17,7 @@ jobs:
       - run:
           command: << parameters.command-run >>
 
-  build-python:
+  build-test-python:
     parameters:
       python-version:
         type: string
@@ -31,6 +31,7 @@ jobs:
       - run:
           name: Build source distribution and install package from it
           command: |
+              poetry lock && \
               poetry install --with=dev,test && \
               poetry build && \
               pip install dist/$(ls dist/ | grep .whl)
