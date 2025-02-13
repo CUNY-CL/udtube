@@ -21,17 +21,14 @@ jobs:
         type: string
     docker:
       - image: cimg/python:<< parameters.python-version >>
-        #auth:
-        #  username: $DOCKERHUB_USERNAME
-        #  password: $DOCKERHUB_PASSWORD
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_PASSWORD
     steps:
       - checkout
       - run:
-          name: Build source distribution and install package from it
-          command: |
-              poetry install --with=dev,test && \
-              poetry build && \
-              pip install dist/$(ls dist/ | grep .whl)
+          name: Build and install package
+          command: poetry install --with=dev,test 
       - run:
           name: Show installed Python packages
           command: poetry show
