@@ -61,7 +61,7 @@ workflows:
               poetry build && \
               poetry run twine check dist/`ls dist/ | grep .tar.gz` && \
               poetry run twine check dist/`ls dist/ | grep .whl`
-      - build-python:
+      - build-test-python:
           requires:
             - black
             - flake8
