@@ -23,9 +23,9 @@ jobs:
         type: string
     docker:
       - image: cimg/python:<< parameters.python-version >>
-        #auth:
-        #  username: $DOCKERHUB_USERNAME
-        #  password: $DOCKERHUB_PASSWORD
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_PASSWORD
     steps:
       - checkout
       - run:
