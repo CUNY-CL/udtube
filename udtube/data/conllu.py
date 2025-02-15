@@ -26,6 +26,8 @@ class ID:
     * decimals: represented by an integer and a second integer > 0.
     * MWEs: represented by two integers denoting a span of tokens.
 
+    A ID cannot both have a decimal and be a MWE.
+
     The decimal dummy value is 0; the MWE dummy value (for the upper element
     of the span) is the same as the lower value.
 
