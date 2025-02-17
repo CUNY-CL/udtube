@@ -11,7 +11,7 @@ jobs:
     steps:
       - checkout
       - run:
-          command: pip install --with=dev,test
+          command: pip install -r requirements.txt
       - run:
           command: << parameters.command-run >>
 
