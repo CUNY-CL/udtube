@@ -37,9 +37,7 @@ also be specified using POSIX-style command-line flags.
 
 To install UDTube and its dependencies, run the following command:
 
-    poetry install
-
-Note you'll have to have [poetry](https://python-poetry.org/docs/) installed.
+    pip install .
 
 ## File formats
 

@@ -11,9 +11,7 @@ jobs:
     steps:
       - checkout
       - run:
-          command: |
-              poetry lock && \
-              poetry install --only=dev
+          command: pip install --with=dev,test
       - run:
           command: << parameters.command-run >>
 
@@ -31,15 +29,16 @@ jobs:
       - run:
           name: Installs package
           command: |
-              poetry lock && \
-              poetry install --with=dev,test
+              pip install -r requirements.txt && \
+              python -m build && \
+              pip install dist/`ls dist/ | grep .whl`
       - run:
           name: Show installed Python packages
-          command: poetry show
+          command: pip list -v
       - run:
           name: Run tests
           command: |
-              poetry run pytest -vv -k "not test_model_1_ru" tests --junitxml /tmp/testxml/report.xml
+              pytest -vv tests --junitxml /tmp/testxml/report.xml
       - store_test_results:
           path: /tmp/testxml/report.xml
 
@@ -49,17 +48,17 @@ workflows:
     jobs:
       - pre-build:
           name: black
-          command-run: poetry run black --line-length 79 --check .
+          command-run: black --line-length 79 --check .
       - pre-build:
           name: flake8
-          command-run: poetry run flake8 --ignore E203,W503 .
+          command-run: flake8 --ignore E203,W503 .
       - pre-build:
           name: twine
           command-run: |
-              poetry build && \
-              poetry run twine check dist/`ls dist/ | grep .tar.gz` && \
-              poetry run twine check dist/`ls dist/ | grep .whl`
-      - build-test-python:
+            python -m build && \
+            twine check dist/`ls dist/ | grep .tar.gz` && \
+            twine check dist/`ls dist/ | grep .whl`
+      - build-python:
           requires:
             - black
             - flake8
