@@ -47,5 +47,8 @@ homepage = "https://github.com/CUNY-CL/udtube"
 include = ["udtube*"]
 exclude = ["configs*", "examples*", "scripts*"]
 
+[project.scripts]
+udtube = "udtube.cli:main"
+
 [tool.setuptools]
 include-package-data = false
