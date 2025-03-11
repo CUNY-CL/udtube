@@ -1,4 +1,4 @@
-"""Testing how the system works when there is a whitespace token."""
+"""Tests system behavior with control characters classified as whitespace."""
 
 import os
 import tempfile
@@ -12,7 +12,7 @@ CONFIG_PATH = os.path.join(DIR, "testdata/udtube_config.yaml")
 TESTDATA_DIR = os.path.join(DIR, "testdata")
 
 
-class UDTubeTest(unittest.TestCase):
+class ControlTest(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.TemporaryDirectory(prefix="udtube_test-")
         self.assertNonEmptyFileExists(CONFIG_PATH)
@@ -24,7 +24,7 @@ class UDTubeTest(unittest.TestCase):
             os.stat(path).st_size, 0, msg="file {path} is empty"
         )
 
-    def test_whitespace_token(self):
+    def test_control_token(self):
         # Testing a case where there's a whitespace token in the sentence.
         # Keeping the test as minimal as possible;
         # train/eval/pred are the same, we are more concerned about the file.

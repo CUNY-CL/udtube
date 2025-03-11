@@ -1,10 +1,10 @@
 [project]
 name = "udtube"
-version = "0.1.3"
+version = "0.1.4"
 description = "Neural morphological analysis"
 license = { text = "Apache 2.0" }
 readme = "README.md"
-requires-python = ">=3.9,<3.14"
+requires-python = ">=3.10,<3.14"
 authors = [
     { name = "Daniel Yakubov", email = "danielyak98@gmail.com" },
     { name = "Kyle Gorman", email = "kylebgorman@gmail.com" },
@@ -16,7 +16,6 @@ keywords = [
     "language",
 ]
 classifiers = [
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
