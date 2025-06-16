@@ -56,7 +56,6 @@ if __name__ == "__main__":
     logging.basicConfig(format="%(levelname)s: %(message)s", level="INFO")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "run_path",
-        help="Run path (in the form entity/project/run_id)"
+        "run_path", help="Run path (in the form entity/project/run_id)"
     )
     main(parser.parse_args())
