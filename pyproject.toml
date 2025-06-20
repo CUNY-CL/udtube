@@ -1,6 +1,6 @@
 [project]
 name = "udtube"
-version = "0.1.4"
+version = "0.1.5"
 description = "Neural morphological analysis"
 license = { text = "Apache 2.0" }
 readme = "README.md"
