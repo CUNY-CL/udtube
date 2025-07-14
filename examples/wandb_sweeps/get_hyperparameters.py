@@ -44,12 +44,12 @@ def main(args: argparse.Namespace) -> None:
     # Gets all config values from this run.
     flat_config = {
         key: value
-        for key, value in sorted(run.config.items())
+        for key, value in run.config.items()
         if value is not None and "/" not in key
     }
     # Converts to nested dictionary structure.
     config = dot_to_nested_dict(flat_config)
-    print(yaml.dump(config, default_flow_style=False, sort_keys=False))
+    print(yaml.safe_dump(config, default_flow_style=False))
 
 
 if __name__ == "__main__":
