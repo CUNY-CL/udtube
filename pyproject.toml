@@ -27,13 +27,14 @@ classifiers = [
     "Topic :: Text Processing :: Linguistic",
 ]
 dependencies = [
-    "accelerate>=1.6.0,<2.0.0",
-    "jsonargparse[signatures]>=4.28.0,<5.0.0",
-    "lightning>=2.4.0,<3.0.0",
-    "pyyaml>=6.0,<7.0",
-    "transformers>=4.44.0,<5.0.0",
-    "torch>=2.4.0,<3.0.0",
-    "torchmetrics>=1.4.0.post0,<2.0.0",
+    "accelerate==1.8.1",
+    "jsonargparse[signatures]>=4.40.0,<5.0.0",
+    "numpy==2.3.1",
+    "pytorch-lightning==2.5.2",
+    "pyyaml>=6.0.2,<7.0.0",
+    "transformers==4.53.2",
+    "torch==2.7.1",
+    "torchmetrics==1.7.4",
     "wandb>=0.18.0,<1.0.0",
 ]
 [build-system]
