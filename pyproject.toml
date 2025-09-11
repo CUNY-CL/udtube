@@ -29,8 +29,8 @@ classifiers = [
 dependencies = [
     "accelerate==1.8.1",
     "jsonargparse[signatures]>=4.40.0,<5.0.0",
+    "lightning==2.5.2",
     "numpy<=2.3.1",
-    "pytorch-lightning==2.5.2",
     "pyyaml>=6.0.2,<7.0.0",
     "transformers==4.53.2",
     "torch==2.7.1",
