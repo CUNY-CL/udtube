@@ -370,9 +370,24 @@ mention above.
 
 UDTube is distributed under an [Apache 2.0 license](LICENSE.txt).
 
-## Contribution
+## For developers
 
 We welcome contributions using the fork-and-pull model.
+
+## Testing
+
+A large number of tests are provided. To run all tests, run the following:
+
+    pytest -vvv tests
+
+Tests in [`tests/udtube_test.py`](tests/udtube_test.py) are heavy-weight
+integration tests and exceed the resources of our current continuous
+integration framework. Therefore one is encouraged to run these locally
+before submitting a PR.
+
+See [the `pytest`
+documentation](https://docs.pytest.org/en/stable/how-to/usage.html) for more
+information on the test runner.
 
 ## References
 
