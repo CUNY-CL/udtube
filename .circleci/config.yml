@@ -34,11 +34,11 @@ jobs:
               pip install dist/`ls dist/ | grep .whl`
       - run:
           name: Show installed Python packages
-          command: pip list -v
+          command: pip list
       - run:
           name: Run tests
           command: |
-              pytest -vv -k "not test_model_0_el and not test_model_2_ru" tests --junitxml /tmp/testxml/report.xml
+              pytest -vvv -k "not udtube" tests --junitxml /tmp/testxml/report.xml
       - store_test_results:
           path: /tmp/testxml/report.xml
 

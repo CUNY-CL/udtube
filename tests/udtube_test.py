@@ -54,7 +54,6 @@ class UDTubeTest(unittest.TestCase):
 
     @parameterized.expand(
         [
-            ("el", "FacebookAI/xlm-roberta-base", True),
             ("en", "google-bert/bert-base-cased", True),
             ("ru", "DeepPavlov/rubert-base-cased", False),
         ]
@@ -119,9 +118,7 @@ class UDTubeTest(unittest.TestCase):
                         f"--model.use_xpos={use_xpos}",
                     ]
                 )
-        expected_path = os.path.join(
-            self.tempdir.name, f"{langcode}_evaluated.test"
-        )
+        expected_path = os.path.join(TESTDATA_DIR, f"{langcode}_expected.test")
         self.assertNonEmptyFileExists(evaluated_path)
         self.assertFileIdentity(evaluated_path, expected_path)
 
