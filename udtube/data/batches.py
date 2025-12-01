@@ -1,11 +1,4 @@
-"""Batch objects.
-
-Adapted from Yoyodyne:
-
-    https://github.com/CUNY-CL/yoyodyne/blob/master/yoyodyne/data/indexes.py
-
-However, there is no need for padding at this stage.
-"""
+"""Batch objects."""
 
 from typing import List, Optional
 
