@@ -76,7 +76,3 @@ def main() -> None:
         # documentation in `trainers.py` for more context.
         trainer_class=trainers.Trainer,
     )
-
-
-if __name__ == "__main__":
-    main()
