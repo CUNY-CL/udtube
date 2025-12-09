@@ -337,7 +337,7 @@ CoNLL-U file. One must also specify the path where the predictions will be
 written.
 
     ...
-    predict:
+    prediction:
       path: /Users/Shinji/predictions.conllu
     ...
 
