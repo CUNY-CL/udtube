@@ -30,7 +30,7 @@ class ControlTest(unittest.TestCase):
         # train/eval/pred are the same, we are more concerned about the file.
         data_path = os.path.join(TESTDATA_DIR, "badsentence.conllu")
         model_dir = os.path.join(self.tempdir.name, "models")
-        cli.udtube_python_interface(
+        cli.python_interface(
             [
                 "fit",
                 f"--config={CONFIG_PATH}",
@@ -49,7 +49,7 @@ class ControlTest(unittest.TestCase):
             self.tempdir.name, "badsentence_predicted.conllu"
         )
         # Predicts on "expected" data.
-        cli.udtube_python_interface(
+        cli.python_interface(
             [
                 "predict",
                 f"--ckpt_path={checkpoint_path}",
