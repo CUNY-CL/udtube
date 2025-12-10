@@ -256,7 +256,7 @@ CoNLL-U file. One must also specify the path where the predictions will be
 written.
 
     ...
-    predict:
+    prediction:
       path: /Users/Shinji/predictions.conllu
     ...
 
@@ -300,9 +300,9 @@ A large number of tests are provided. To run all tests, run the following:
     pytest -vvv tests
 
 Tests in [`tests/udtube_test.py`](tests/udtube_test.py) are heavy-weight
-integration tests and exceed the resources of our current continuous integration
-framework. Therefore one is encouraged to run these locally before submitting a
-PR.
+integration tests and exceed the resources of our current continuous
+integration framework. Therefore one is encouraged to run these locally
+before submitting a PR.
 
 See [the `pytest`
 documentation](https://docs.pytest.org/en/stable/how-to/usage.html) for more
