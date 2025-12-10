@@ -1,8 +1,6 @@
 """Defaults."""
 
-from torch import optim
-
-from . import schedulers
+from yoyodyne import optimizers, schedulers
 
 BATCH_SIZE = 32
 
@@ -16,5 +14,5 @@ USE_LEMMA = True
 USE_FEATS = True
 
 # Optimization options.
-OPTIMIZER = optim.Adam
+OPTIMIZER = optimizers.Adam
 SCHEDULER = schedulers.Dummy

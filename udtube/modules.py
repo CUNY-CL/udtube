@@ -130,7 +130,7 @@ class UDTubeEncoder(lightning.LightningModule):
             )
         # Pads and stacks across sentences; the leading dimension is ragged
         # but `pad` cowardly refuses to pad non-trailing dimensions, so we
-        # abuse transposition and permutation.
+        # abuse transposition.
         pad_max = max(
             len(sentence_embedding)
             for sentence_embedding in new_sentence_embeddings
@@ -144,7 +144,7 @@ class UDTubeEncoder(lightning.LightningModule):
                 )
                 for sentence_embedding in new_sentence_embeddings
             ]
-        ).permute(0, 2, 1)
+        ).transpose(1, 2)
 
 
 class UDTubeClassifier(lightning.LightningModule):
@@ -225,7 +225,7 @@ class UDTubeClassifier(lightning.LightningModule):
         This takes the contextual word encodings and then computes the logits
         for each of the active classification heads. This yields logits of the
         shape N x L x C. Loss and accuracy functions expect N x C x L, so we
-        permute to produce this shape.
+        transpose to produce this shape.
 
         Args:
             encodings: the contextual word
@@ -235,22 +235,22 @@ class UDTubeClassifier(lightning.LightningModule):
         """
         return data.Logits(
             upos=(
-                self.upos_head(encodings).permute(0, 2, 1)
+                self.upos_head(encodings).transpose(1, 2)
                 if self.use_upos
                 else None
             ),
             xpos=(
-                self.xpos_head(encodings).permute(0, 2, 1)
+                self.xpos_head(encodings).transpose(1, 2)
                 if self.use_xpos
                 else None
             ),
             lemma=(
-                self.lemma_head(encodings).permute(0, 2, 1)
+                self.lemma_head(encodings).transpose(1, 2)
                 if self.use_lemma
                 else None
             ),
             feats=(
-                self.feats_head(encodings).permute(0, 2, 1)
+                self.feats_head(encodings).transpose(1, 2)
                 if self.use_feats
                 else None
             ),

@@ -144,7 +144,7 @@ learning rate for the classifier.
     ...
     model:
       encoder_optimizer:
-        class_path: torch.optim.Adam
+        class_path: yoyodyne.optimizers.Adam
         init_args:
           lr: 1e-5
       encoder_scheduler:
@@ -162,105 +162,24 @@ learning rate for the classifier.
           factor: 0.1
       ...
 
-The default scheduler is `udtube.schedulers.DummyScheduler`, which keeps
-learning rate fixed to its initial value.
+The default scheduler is `udtube.schedulers.Dummy`, which keeps learning rate
+fixed to its initial value.
 
 #### Checkpointing
 
-The
-[`ModelCheckpoint`](https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.ModelCheckpoint.html)
-is used to control the generation of checkpoint files. A sample YAML snippet is
-given below.
-
-    ...
-    checkpoint:
-      filename: "model-{epoch:03d}-{val_loss:.4f}"
-      monitor: val_loss
-      verbose: true
-      ...
-
-Without some specification under `checkpoint:` UDTube will not generate
-checkpoints!
+A checkpoint config must be specified or no checkpoints will be generated; [see
+here for more
+information](https://github.com/CUNY-CL/yoyodyne/blob/master/README.md#checkpointing).
 
 #### Callbacks
 
-The user will likely want to configure additional callbacks. Some useful
-examples are given below.
-
-The
-[`LearningRateMonitor`](https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.LearningRateMonitor.html)
-callback records learning rates; this is useful when working with multiple
-optimizers and/or schedulers, as we do here. A sample YAML snippet is given
-below.
-
-    ...
-    trainer:
-      callbacks:
-      - class_path: lightning.pytorch.callbacks.LearningRateMonitor
-        init_args:
-          logging_interval: epoch
-      ...
-
-The
-[`EarlyStopping`](https://lightning.ai/docs/pytorch/stable/common/early_stopping.html)
-callback enables early stopping based on a monitored quantity and a fixed
-"patience". A sample YAML snipppet with a patience of 10 is given below.
-
-    ...
-    trainer:
-      callbacks:
-      - class_path: lightning.pytorch.callbacks.EarlyStopping
-        init_args:
-          monitor: val_loss
-          patience: 10
-          verbose: true
-      ...
-
-Adjust the `patience` parameter as needed.
-
-All three of these features are enabled in the [sample configuration
-files](configs) we provide.
+[See here for more
+information](https://github.com/CUNY-CL/yoyodyne/blob/master/README.md#callbacks).
 
 #### Logging
 
-By default, UDTube performs some minimal logging to standard error and uses
-progress bars to keep track of progress during each epoch. However, one can
-enable additional logging faculties during training, using a similar syntax to
-the one we saw above for callbacks.
-
-The
-[`CSVLogger`](https://lightning.ai/docs/pytorch/stable/extensions/generated/lightning.pytorch.loggers.CSVLogger.html)
-logs all monitored quantities to a CSV file. A sample configuration is given
-below.
-
-    ...
-    trainer:
-      logger:
-        - class_path: lightning.pytorch.loggers.CSVLogger
-          init_args:
-            save_dir: /Users/Shinji/models
-      ...
-       
-
-Adjust the `save_dir` argument as needed.
-
-The
-[`WandbLogger`](https://lightning.ai/docs/pytorch/stable/extensions/generated/lightning.pytorch.loggers.WandbLogger.html)
-works similarly to the `CSVLogger`, but sends the data to the third-party
-website [Weights & Biases](https://wandb.ai/site), where it can be used to
-generate charts or share artifacts. A sample configuration is given below.
-
-    ...
-    trainer:
-      logger:
-      - class_path: lightning.pytorch.loggers.WandbLogger
-        init_args:
-          project: unit1
-          save_dir: /Users/Shinji/models
-      ...
-
-Adjust the `project` and `save_dir` arguments as needed; note that this
-functionality requires a working account with Weights & Biases.
+[See here for more
+information](https://github.com/CUNY-CL/yoyodyne/blob/master/README.md#logging).
 
 #### Other options
 
@@ -381,9 +300,9 @@ A large number of tests are provided. To run all tests, run the following:
     pytest -vvv tests
 
 Tests in [`tests/udtube_test.py`](tests/udtube_test.py) are heavy-weight
-integration tests and exceed the resources of our current continuous
-integration framework. Therefore one is encouraged to run these locally
-before submitting a PR.
+integration tests and exceed the resources of our current continuous integration
+framework. Therefore one is encouraged to run these locally before submitting a
+PR.
 
 See [the `pytest`
 documentation](https://docs.pytest.org/en/stable/how-to/usage.html) for more
