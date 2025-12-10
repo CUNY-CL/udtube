@@ -1,9 +1,4 @@
-"""The UDTube model.
-
-In documentation below, N is the batch size, C is the number of classes for a
-classification head, and L is the maximum length (in subwords, tokens, or
-tags) of a sentence in the batch.
-"""
+"""The UDTube model."""
 
 from typing import Dict, List, Optional
 

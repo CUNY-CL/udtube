@@ -62,7 +62,7 @@ class UDTubeTest(unittest.TestCase):
         # Fits model.
         train_path = os.path.join(TESTDATA_DIR, f"{langcode}_train.conllu")
         model_dir = os.path.join(self.tempdir.name, "models")
-        cli.udtube_python_interface(
+        cli.python_interface(
             [
                 "fit",
                 f"--config={CONFIG_PATH}",
@@ -86,7 +86,7 @@ class UDTubeTest(unittest.TestCase):
         expected_path = os.path.join(
             TESTDATA_DIR, f"{langcode}_expected.conllu"
         )
-        cli.udtube_python_interface(
+        cli.python_interface(
             [
                 "predict",
                 f"--ckpt_path={checkpoint_path}",
@@ -107,7 +107,7 @@ class UDTubeTest(unittest.TestCase):
         )
         with open(evaluated_path, "w") as sink:
             with contextlib.redirect_stdout(sink):
-                cli.udtube_python_interface(
+                cli.python_interface(
                     [
                         "test",
                         f"--ckpt_path={checkpoint_path}",

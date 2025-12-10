@@ -35,7 +35,7 @@ class LengthTest(unittest.TestCase):
     def test_truncation(self):
         # Fits the model for one epoch.
         model_dir = os.path.join(self.tempdir.name, "models")
-        cli.udtube_python_interface(
+        cli.python_interface(
             [
                 "fit",
                 f"--config={CONFIG_PATH}",
@@ -48,7 +48,7 @@ class LengthTest(unittest.TestCase):
         )
         self.assertNonEmptyFileExists(checkpoint_path)
         # Attempts prediction.
-        cli.udtube_python_interface(
+        cli.python_interface(
             [
                 "predict",
                 f"--ckpt_path={checkpoint_path}",

@@ -1,27 +1,8 @@
 """Custom schedulers."""
 
-from typing import List
-
-import numpy
+import math
 
 from torch import optim
-
-
-class Dummy(optim.lr_scheduler.LRScheduler):
-    """A dummy scheduler that holds learning rate constant.
-
-    Args:
-        optimizer: optimizer.
-    """
-
-    def __init__(self, optimizer):
-        super().__init__(optimizer)
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.optimizer})"
-
-    def get_lr(self) -> List[float]:
-        return [group["lr"] for group in self.optimizer.param_groups]
 
 
 class WarmupInverseSquareRoot(optim.lr_scheduler.LambdaLR):
@@ -30,6 +11,8 @@ class WarmupInverseSquareRoot(optim.lr_scheduler.LambdaLR):
     Linearly increases learning rate from 0 to the learning rate over the
     warmup epochs, then decreases learning rate according to an inverse root
     square schedule.
+
+    A slightly different version is present in Yoyodyne.
 
     After:
         Wu, S., Cotterell, R., and Hulden, M. 2021. Applying the transformer to
@@ -51,7 +34,7 @@ class WarmupInverseSquareRoot(optim.lr_scheduler.LambdaLR):
         warmup_epochs,
     ):
         self.warmup_epochs = warmup_epochs
-        self.decay_factor = numpy.sqrt(warmup_epochs)
+        self.decay_factor = math.sqrt(warmup_epochs)
         super().__init__(optimizer, self.lr_lambda)
 
     def __repr__(self) -> str:
