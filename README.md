@@ -162,7 +162,7 @@ learning rate for the classifier.
           factor: 0.1
       ...
 
-The default scheduler is `udtube.schedulers.Dummy`, which keeps learning rate
+The default scheduler is `yoyodyne.schedulers.Dummy`, which keeps learning rate
 fixed to its initial value.
 
 #### Checkpointing
