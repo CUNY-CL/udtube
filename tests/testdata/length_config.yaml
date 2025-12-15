@@ -1,6 +1,6 @@
 checkpoint:
   monitor: val_loss
-  save_last: true
+  save_last: link
 data:
   batch_size: 2
   train: tests/testdata/length.conllu
@@ -14,3 +14,4 @@ seed_everything: 42
 trainer:
   enable_progress_bar: false
   max_epochs: 1
+  precision: bf16-mixed

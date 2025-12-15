@@ -44,18 +44,6 @@ class Mapper:
     def __post_init__(self):
         self.lemma_mapper = LemmaMapper(self.index.reverse_edits)
 
-    @classmethod
-    def read(cls, model_dir: str) -> Mapper:
-        """Loads mapper from an index.
-
-        Args:
-            model_dir (str).
-
-        Returns:
-            Mapper.
-        """
-        return cls(indexes.Index.read(model_dir))
-
     # Encoding.
 
     @staticmethod

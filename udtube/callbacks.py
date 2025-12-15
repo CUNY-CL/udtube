@@ -19,7 +19,6 @@ class PredictionWriter(callbacks.BasePredictionWriter):
 
     Args:
         path: Path for the predictions file.
-        model_dir: Path for checkpoints, indexes, and logs.
     """
 
     path: Optional[str]
@@ -29,13 +28,10 @@ class PredictionWriter(callbacks.BasePredictionWriter):
     def __init__(
         self,
         path: Optional[str] = None,  # If not filled in, stdout will be used.
-        model_dir: str = "",  # Dummy value filled in by a link.
     ):
         super().__init__("batch")
         self.path = path
         self.sink = sys.stdout
-        assert model_dir, "no model_dir specified"
-        self.mapper = data.Mapper.read(model_dir)
 
     # Required API.
 
@@ -58,6 +54,7 @@ class PredictionWriter(callbacks.BasePredictionWriter):
         batch_idx: int,
         dataloader_idx: int,
     ) -> None:
+        mapper = data.Mapper(trainer.datamodule.index)
         # Batch-level argmax on the classification heads.
         upos_hat = (
             torch.argmax(logits.upos, dim=1) if logits.use_upos else None
@@ -75,18 +72,18 @@ class PredictionWriter(callbacks.BasePredictionWriter):
             # Sentence-level decoding of the classification indices, followed
             # by rewriting the fields in the tokenlist.
             if upos_hat is not None:
-                upos_it = self.mapper.decode_upos(upos_hat[i, :])
+                upos_it = mapper.decode_upos(upos_hat[i, :])
                 self._fill_in_tags(tokenlist, "upos", upos_it)
             if xpos_hat is not None:
-                xpos_it = self.mapper.decode_xpos(xpos_hat[i, :])
+                xpos_it = mapper.decode_xpos(xpos_hat[i, :])
                 self._fill_in_tags(tokenlist, "xpos", xpos_it)
             if lemma_hat is not None:
-                lemma_it = self.mapper.decode_lemma(
+                lemma_it = mapper.decode_lemma(
                     tokenlist.get_tokens(), lemma_hat[i, :]
                 )
                 self._fill_in_tags(tokenlist, "lemma", lemma_it)
             if feats_hat is not None:
-                feats_it = self.mapper.decode_feats(feats_hat[i, :])
+                feats_it = mapper.decode_feats(feats_hat[i, :])
                 self._fill_in_tags(tokenlist, "feats", feats_it)
             print(tokenlist, file=self.sink)
         self.sink.flush()
