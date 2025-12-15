@@ -27,7 +27,6 @@ class UDTubeCLI(cli.LightningCLI):
         )
         # Links.
         parser.link_arguments("model.encoder", "data.encoder")
-        parser.link_arguments("data.model_dir", "prediction.model_dir")
         parser.link_arguments("data.model_dir", "trainer.default_root_dir")
         parser.link_arguments(
             "data.model_dir", "trainer.logger.init_args.save_dir"
