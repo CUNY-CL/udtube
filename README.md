@@ -41,11 +41,17 @@ To install UDTube and its dependencies, run the following command:
 
 ## File formats
 
-Other than YAML configuration files, most operations use files in
-[CoNLL-U](https://universaldependencies.org/format.html) format. This is a
-10-column tab-separated format with a blank line between each sentence and `#`
-used for comments. In all cases, the `ID` and `FORM` field must be fully
-populated; the `_` blank tag can be used for unknown fields.
+### YAML configuration files
+
+UDTube uses YAML configuration files; see the [example configuration
+files](configs) for examples.
+
+### CoNLL-U data files
+
+UDTube operates on [CoNLL-U](https://universaldependencies.org/format.html)
+files. This is a 10-column tab-separated format with a blank line between each
+sentence and `#` used for comments. In all cases, the `ID` and `FORM` field must
+be fully populated; the `_` blank tag can be used for unknown fields.
 
 Many of our experiments are performed using CoNLL-U data from the [Universal
 Dependencies project](https://universaldependencies.org/).
@@ -300,9 +306,9 @@ A large number of tests are provided. To run all tests, run the following:
     pytest -vvv tests
 
 Tests in [`tests/udtube_test.py`](tests/udtube_test.py) are heavy-weight
-integration tests and exceed the resources of our current continuous
-integration framework. Therefore one is encouraged to run these locally
-before submitting a PR.
+integration tests and exceed the resources of our current continuous integration
+framework. Therefore one is encouraged to run these locally before submitting a
+PR.
 
 See [the `pytest`
 documentation](https://docs.pytest.org/en/stable/how-to/usage.html) for more

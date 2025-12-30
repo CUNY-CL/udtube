@@ -64,6 +64,7 @@ def main() -> None:
         models.UDTube,
         data.DataModule,
         auto_configure_optimizers=False,
+        parser_kwargs={"parser_mode": "omegaconf"},
         # Prevents prediction logits from accumulating in memory; see the
         # documentation in `trainers.py` for more context.
         trainer_class=trainers.Trainer,
@@ -76,6 +77,7 @@ def python_interface(args: cli.ArgsType = None):
         models.UDTube,
         data.DataModule,
         auto_configure_optimizers=False,
+        parser_kwargs={"parser_mode": "omegaconf"},
         trainer_class=trainers.Trainer,
         args=args,
     )
