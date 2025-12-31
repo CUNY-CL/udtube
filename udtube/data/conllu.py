@@ -108,8 +108,7 @@ class ID:
         return self.decimal > 0
 
 
-# TODO: when dropping support for Python 3.9, add `slots=True`.
-@dataclasses.dataclass
+@dataclasses.dataclass(slots=True)
 class Token:
     """Token object."""
 
