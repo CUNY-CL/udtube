@@ -1,9 +1,4 @@
-"""Datasets and related utilities.
-
-* ConlluIterDataset is a CoNLL-U dataset (labeled or not, it doedsn't matter),
-  loaded incrementally.
-* ConlluMapDataset is a labeled dataset, loaded greedily.
-"""
+"""Datasets and related utilities."""
 
 import abc
 import dataclasses
@@ -57,6 +52,7 @@ class Item(nn.Module):
         return self.feats is not None
 
 
+@dataclasses.dataclass
 class AbstractDataset(abc.ABC):
     """Base class for datasets.
 
@@ -76,6 +72,7 @@ class IterableTextDataset(AbstractDataset, data.IterableDataset):
             yield Item(tokenlist)
 
 
+@dataclasses.dataclass
 class AbstractTaggedDataset(AbstractDataset):
 
     mapper: mappers.Mapper
@@ -119,6 +116,7 @@ class AbstractTaggedDataset(AbstractDataset):
         )
 
 
+@dataclasses.dataclass
 class IterableTaggedDataset(AbstractTaggedDataset, data.IterableDataset):
     """Iterable (non-random access), tagged dataset."""
 
@@ -127,6 +125,7 @@ class IterableTaggedDataset(AbstractTaggedDataset, data.IterableDataset):
             yield self.tokenlist_to_item(tokenlist)
 
 
+@dataclasses.dataclass
 class MappableDataset(AbstractTaggedDataset, data.Dataset):
     """Mappable (random access), tagged dataset.
 
@@ -145,8 +144,8 @@ class MappableDataset(AbstractTaggedDataset, data.Dataset):
             self._offsets.append(0)
             while line := source.readline():
                 # CoNLL-U sentences are separated by blank lines.
-                if not line.rstrip():
-                    break
+                if line.strip():
+                    continue
                 offset = source.tell()
                 # Confirms there is content after this blank line.
                 if source.peek(1):
@@ -168,9 +167,12 @@ class MappableDataset(AbstractTaggedDataset, data.Dataset):
             end = self._offsets[idx + 1]
         else:
             end = mm.size()
-        chunk = mm[start:end].decode(defaults.ENCODING)
+        chunk = mm[start:end].decode(defaults.ENCODING).strip()
         tokenlist = conllu.parse_from_string(chunk)
         return self.tokenlist_to_item(tokenlist)
+
+    def __len__(self) -> int:
+        return len(self._offsets)
 
     def __del__(self) -> None:
         if self._mmap is not None:

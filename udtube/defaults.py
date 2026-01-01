@@ -2,9 +2,10 @@
 
 from yoyodyne import optimizers, schedulers
 
-BATCH_SIZE = 32
+# Default text encoding.
+ENCODING = "utf-8"
 
-DROPOUT = 0.5
+# Architecture arguments.
 ENCODER = "google-bert/bert-base-multilingual-cased"
 POOLING_LAYERS = 4
 REVERSE_EDITS = True
@@ -13,6 +14,8 @@ USE_XPOS = True
 USE_LEMMA = True
 USE_FEATS = True
 
-# Optimization options.
+# Training arguments.
+BATCH_SIZE = 32
+DROPOUT = 0.2
 OPTIMIZER = optimizers.Adam
 SCHEDULER = schedulers.Dummy
