@@ -108,8 +108,7 @@ class ID:
         return self.decimal > 0
 
 
-# TODO: when dropping support for Python 3.9, add `slots=True`.
-@dataclasses.dataclass
+@dataclasses.dataclass(slots=True)
 class Token:
     """Token object."""
 
@@ -221,7 +220,9 @@ def parse_from_string(buffer: str) -> TokenList:
     """
     metadata = {}
     tokens = []
-    for line in buffer.splitlines():
+    # Using this custom splitter as an alternative to str.splitlines to avoid
+    # other control characters from being treated as separators.
+    for line in re.split(r"\r\n|\n|\r", buffer):
         line = line.strip()
         maybe_metadata = _maybe_parse_metadata(line)
         if maybe_metadata:

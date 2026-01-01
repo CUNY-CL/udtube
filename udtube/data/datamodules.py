@@ -88,12 +88,14 @@ class DataModule(lightning.LightningDataModule):
             if self.train
             else indexes.Index.read(model_dir)
         )
-        self.tokenizer = transformers.AutoTokenizer.from_pretrained(
-            encoder,
-            # These options are not available on all tokenizers but seem to be
-            # ignored so they can be passed in safely.
-            clean_up_tokenization_spaces=False,
-            add_prefix_space=True,
+        self.collator = collators.Collator(
+            transformers.AutoTokenizer.from_pretrained(
+                encoder,
+                # These options are not available on all tokenizers but seem
+                # to be ignored so they can be passed in safely.
+                clean_up_tokenization_spaces=False,
+                add_prefix_space=True,
+            )
         )
 
     # Based on: https://universaldependencies.org/u/pos/index.html.
@@ -181,11 +183,23 @@ class DataModule(lightning.LightningDataModule):
 
     # Required API.
 
+    # The training set uses the mappable dataset because of shuffling, and
+    # the validation set uses it because it is accesssed repeatedly under
+    # normal conditions. The prediction set uses an iterable, text-only
+    # dataset, whereas the test set uses a more general iterable dataset.
+
     def train_dataloader(self) -> data.DataLoader:
         assert self.train is not None, "no train path"
         return data.DataLoader(
-            self._conllu_map_dataset(self.train),
-            collate_fn=collators.Collator(self.tokenizer),
+            datasets.MappableDataset(
+                self.train,
+                mappers.Mapper(self.index),
+                self.use_upos,
+                self.use_xpos,
+                self.use_lemma,
+                self.use_feats,
+            ),
+            collate_fn=self.collator,
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=1,
@@ -193,10 +207,17 @@ class DataModule(lightning.LightningDataModule):
         )
 
     def val_dataloader(self) -> data.DataLoader:
-        assert self.train is not None, "no val path"
+        assert self.val is not None, "no val path"
         return data.DataLoader(
-            self._conllu_map_dataset(self.val),
-            collate_fn=collators.Collator(self.tokenizer),
+            datasets.MappableDataset(
+                self.val,
+                mappers.Mapper(self.index),
+                self.use_upos,
+                self.use_xpos,
+                self.use_lemma,
+                self.use_feats,
+            ),
+            collate_fn=self.collator,
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=1,
@@ -206,9 +227,8 @@ class DataModule(lightning.LightningDataModule):
     def predict_dataloader(self) -> data.DataLoader:
         assert self.predict is not None, "no predict path"
         return data.DataLoader(
-            # This one uses an iterative data loader instead.
-            datasets.ConlluIterDataset(self.predict),
-            collate_fn=collators.Collator(self.tokenizer),
+            datasets.IterableTextDataset(self.predict),
+            collate_fn=self.collator,
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=1,
@@ -218,20 +238,17 @@ class DataModule(lightning.LightningDataModule):
     def test_dataloader(self) -> data.DataLoader:
         assert self.test is not None, "no test path"
         return data.DataLoader(
-            self._conllu_map_dataset(self.test),
-            collate_fn=collators.Collator(self.tokenizer),
+            datasets.IterableTaggedDataset(
+                self.test,
+                mappers.Mapper(self.index),
+                self.use_upos,
+                self.use_xpos,
+                self.use_lemma,
+                self.use_feats,
+            ),
+            collate_fn=self.collator,
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=1,
             persistent_workers=True,
-        )
-
-    def _conllu_map_dataset(self, path: str) -> datasets.ConlluMapDataset:
-        return datasets.ConlluMapDataset(
-            list(conllu.parse_from_path(path)),
-            mappers.Mapper(self.index),
-            self.use_upos,
-            self.use_xpos,
-            self.use_lemma,
-            self.use_feats,
         )
