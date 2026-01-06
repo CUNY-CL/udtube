@@ -153,6 +153,12 @@ class UDTube(lightning.LightningModule):
     # See the following for how these are called by the different subcommands.
     # https://lightning.ai/docs/pytorch/latest/common/lightning_module.html#hooks
 
+    def on_fit_start(self) -> None:
+        # Rather than crashing, we simply warn about lack of deterministic
+        # algorithms.
+        if torch.are_deterministic_algorithms_enabled():
+            torch.use_deterministic_algorithms(True, warn_only=True)
+
     def predict_step(self, batch: data.Batch, batch_idx: int) -> data.Logits:
         return self(batch)
 

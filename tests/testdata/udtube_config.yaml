@@ -18,6 +18,7 @@ model:
       lr: 1e-2
 seed_everything: 42
 trainer:
+  deterministic: true  # Slower but we're testing...
   enable_progress_bar: false
   max_epochs: 10
   precision: bf16-mixed
