@@ -58,6 +58,7 @@ class UDTube(lightning.LightningModule):
         arc_mlp_size: int = defaults.ARC_MLP_SIZE,
         deprel_mlp_size: int = defaults.DEPREL_MLP_SIZE,
         # Optimization.
+        *,
         encoder_optimizer: cli.OptimizerCallable = defaults.OPTIMIZER,
         encoder_scheduler: cli.LRSchedulerCallable = defaults.SCHEDULER,
         classifier_optimizer: cli.OptimizerCallable = defaults.OPTIMIZER,
@@ -82,12 +83,12 @@ class UDTube(lightning.LightningModule):
             use_feats=use_feats,
             use_parse=use_parse,
             dropout=dropout,
-            arc_mlp_size=arc_mlp_size,
-            deprel_mlp_size=deprel_mlp_size,
             upos_out_size=upos_out_size,
             xpos_out_size=xpos_out_size,
             lemma_out_size=lemma_out_size,
             feats_out_size=feats_out_size,
+            arc_mlp_size=arc_mlp_size,
+            deprel_mlp_size=deprel_mlp_size,
             deprel_out_size=deprel_out_size,
         )
         self.loss_func = nn.CrossEntropyLoss(ignore_index=special.PAD_IDX)
