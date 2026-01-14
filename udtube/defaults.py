@@ -13,6 +13,7 @@ USE_UPOS = True
 USE_XPOS = True
 USE_LEMMA = True
 USE_FEATS = True
+USE_PARSE = True
 
 # Training arguments.
 BATCH_SIZE = 32

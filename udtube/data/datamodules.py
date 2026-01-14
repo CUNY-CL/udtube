@@ -35,6 +35,7 @@ class DataModule(lightning.LightningDataModule):
         use_xpos: Enables the language-specific POS tagging task.
         use_lemma: Enables the lemmatization task.
         use_feats: Enables the morphological feature tagging task.
+        use_parse: Enables the dependency parser task.
         batch_size: Batch size.
     """
 
@@ -47,6 +48,7 @@ class DataModule(lightning.LightningDataModule):
     use_xpos: bool
     use_lemma: bool
     use_feats: bool
+    use_parse: bool
     batch_size: int
     index: indexes.Index
     tokenizer: transformers.AutoTokenizer
@@ -67,6 +69,7 @@ class DataModule(lightning.LightningDataModule):
         use_xpos: bool = defaults.USE_XPOS,
         use_lemma: bool = defaults.USE_LEMMA,
         use_feats: bool = defaults.USE_FEATS,
+        use_parse: bool = defaults.USE_PARSE,
         # Other.
         batch_size: int = defaults.BATCH_SIZE,
     ):
@@ -80,6 +83,7 @@ class DataModule(lightning.LightningDataModule):
         self.use_xpos = use_xpos
         self.use_lemma = use_lemma
         self.use_feats = use_feats
+        self.use_parse = use_parse
         self.batch_size = batch_size
         # If the training data is specified, it is used to create (or recreate)
         # the index; if not specified it is read from the model directory.
@@ -125,6 +129,7 @@ class DataModule(lightning.LightningDataModule):
         lemma_vocabulary = set() if self.use_lemma else None
         feats_vocabulary = set() if self.use_feats else None
         lemma_mapper = mappers.LemmaMapper(self.reverse_edits)
+        label_vocabulary = set() if self.use_parse else None
         for tokenlist in conllu.parse_from_path(self.train):
             # We don't need to collect the upos vocabulary because "u"
             # stands for "universal" here.
@@ -137,6 +142,8 @@ class DataModule(lightning.LightningDataModule):
                     )
             if self.use_feats:
                 feats_vocabulary.update(token.feats for token in tokenlist)
+            if self.use_parse:
+                label_vocabulary.update(token.label for token in tokenlist)
         index = indexes.Index(
             reverse_edits=self.reverse_edits,
             upos=(
@@ -155,6 +162,11 @@ class DataModule(lightning.LightningDataModule):
             feats=(
                 indexes.Vocabulary(feats_vocabulary)
                 if self.use_feats
+                else None
+            ),
+            labels=(
+                indexes.Vocabulary(label_vocabulary)
+                if self.use_parse
                 else None
             ),
         )
@@ -181,6 +193,10 @@ class DataModule(lightning.LightningDataModule):
     def feats_tagset_size(self) -> int:
         return len(self.index.feats) if self.use_feats else 0
 
+    @property
+    def label_tagset_size(self) -> int:
+        return len(self.index.label) if self.use_parse else 0
+
     # Required API.
 
     # The training set uses the mappable dataset because of shuffling, and
@@ -198,6 +214,7 @@ class DataModule(lightning.LightningDataModule):
                 self.use_xpos,
                 self.use_lemma,
                 self.use_feats,
+                self.use_parse,
             ),
             collate_fn=self.collator,
             batch_size=self.batch_size,
@@ -216,6 +233,7 @@ class DataModule(lightning.LightningDataModule):
                 self.use_xpos,
                 self.use_lemma,
                 self.use_feats,
+                self.use_parse,
             ),
             collate_fn=self.collator,
             batch_size=self.batch_size,
@@ -245,6 +263,7 @@ class DataModule(lightning.LightningDataModule):
                 self.use_xpos,
                 self.use_lemma,
                 self.use_feats,
+                self.use_parse,
             ),
             collate_fn=self.collator,
             batch_size=self.batch_size,

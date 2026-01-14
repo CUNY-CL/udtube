@@ -8,7 +8,7 @@ import torch
 from torch import nn
 from torchmetrics import classification
 
-from . import data, defaults, modules, special
+from . import data, defaults, metrics, modules, special
 
 
 class UDTube(lightning.LightningModule):
@@ -51,6 +51,7 @@ class UDTube(lightning.LightningModule):
         use_xpos: bool = defaults.USE_XPOS,
         use_lemma: bool = defaults.USE_LEMMA,
         use_feats: bool = defaults.USE_FEATS,
+        use_parse: bool = defaults.USE_PARSE,
         *,
         encoder_optimizer: cli.OptimizerCallable = defaults.OPTIMIZER,
         encoder_scheduler: cli.LRSchedulerCallable = defaults.SCHEDULER,
@@ -60,6 +61,7 @@ class UDTube(lightning.LightningModule):
         xpos_out_size: int = 2,  # Dummy value filled in via link.
         lemma_out_size: int = 2,  # Dummy value filled in via link.
         feats_out_size: int = 2,  # Dummy value filled in via link.
+        label_out_size: int = 2,  # Dummy value filled in via link.
     ):
         super().__init__()
         # See what this disables here:
@@ -72,10 +74,12 @@ class UDTube(lightning.LightningModule):
             use_xpos,
             use_lemma,
             use_feats,
+            use_parse,
             upos_out_size=upos_out_size,
             xpos_out_size=xpos_out_size,
             lemma_out_size=lemma_out_size,
             feats_out_size=feats_out_size,
+            label_out_size=label_out_size,
         )
         self.loss_func = nn.CrossEntropyLoss(ignore_index=special.PAD_IDX)
         self.upos_accuracy = (
@@ -89,6 +93,16 @@ class UDTube(lightning.LightningModule):
         )
         self.feats_accuracy = (
             self._make_accuracy(feats_out_size) if use_feats else None
+        )
+        self.uas = (
+            metrics.UnlabeledAttachmentScore(ignore_index=special.PAD_IDX)
+            if use_parse
+            else None
+        )
+        self.las = (
+            metrics.LabeledAttachmentScore(ignore_index=special.PAD_IDX)
+            if use_parse
+            else None
         )
         self.encoder_optimizer = encoder_optimizer
         self.encoder_scheduler = encoder_scheduler
@@ -117,6 +131,10 @@ class UDTube(lightning.LightningModule):
     @property
     def use_feats(self) -> bool:
         return self.classifier.use_feats
+
+    @property
+    def use_parse(self) -> bool:
+        return self.classifier.use_parse
 
     def forward(
         self,
@@ -227,6 +245,9 @@ class UDTube(lightning.LightningModule):
         if self.use_feats:
             losses.append(self.loss_func(logits.feats, batch.feats))
             self.feats_accuracy.update(logits.feats, batch.feats)
+        if self.use_parse:
+            # FIXME do something.
+            ...
         loss = torch.sum(torch.stack(losses))
         self.log(
             f"{subset}_loss",
@@ -249,6 +270,9 @@ class UDTube(lightning.LightningModule):
             self.lemma_accuracy.reset()
         if self.use_feats:
             self.feats_accuracy.reset()
+        if self.use_parse:
+            self.uas.reset()
+            self.las.reset()
 
     def _update_accuracies(
         self, logits: data.Logits, batch: data.Batch
@@ -261,6 +285,9 @@ class UDTube(lightning.LightningModule):
             self.lemma_accuracy.update(logits.lemma, batch.lemma)
         if self.use_feats:
             self.feats_accuracy.update(logits.feats, batch.feats)
+        if self.use_parse:
+            self.uas.update(logits.head, batch.head)
+            self.las.update(logits.head, batch.head, logits.label, batch.label)
 
     def _log_accuracies_epoch_end(self, subset: str) -> None:
         if self.use_upos:
@@ -291,6 +318,21 @@ class UDTube(lightning.LightningModule):
             self.log(
                 f"{subset}_feats_accuracy",
                 self.feats_accuracy.compute(),
+                on_epoch=True,
+                logger=True,
+                prog_bar=True,
+            )
+        if self.use_parse:
+            self.log(
+                f"{subset}_uas",
+                self.uas.compute(),
+                on_epoch=True,
+                logger=True,
+                prog_bar=True,
+            )
+            self.log(
+                f"{subset}_las",
+                self.las.compute(),
                 on_epoch=True,
                 logger=True,
                 prog_bar=True,

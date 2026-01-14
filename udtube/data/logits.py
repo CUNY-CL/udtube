@@ -15,13 +15,25 @@ class Logits(nn.Module):
     xpos: Optional[torch.Tensor]
     lemma: Optional[torch.Tensor]
     feats: Optional[torch.Tensor]
+    head: Optional[torch.Tensor]
+    label: Optional[torch.Tensor]
 
-    def __init__(self, upos=None, xpos=None, lemma=None, feats=None):
+    def __init__(
+        self,
+        upos=None,
+        xpos=None,
+        lemma=None,
+        feats=None,
+        head=None,
+        label=None,
+    ):
         super().__init__()
         self.register_buffer("upos", upos)
         self.register_buffer("xpos", xpos)
         self.register_buffer("lemma", lemma)
         self.register_buffer("feats", feats)
+        self.register_buffer("head", head)
+        self.register_buffer("label", label)
 
     @property
     def use_upos(self) -> bool:
@@ -38,3 +50,7 @@ class Logits(nn.Module):
     @property
     def use_feats(self) -> bool:
         return self.feats is not None
+
+    @property
+    def use_parse(self) -> bool:
+        return self.head is not None and self.label is not None

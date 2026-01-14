@@ -7,8 +7,6 @@ score (LAS) metrics used for dependency parsing evaluation.
 import torch
 import torchmetrics
 
-from . import defaults
-
 
 class AttachmentScore(torchmetrics.Metric):
     """Base class for attachment scores.
@@ -17,14 +15,16 @@ class AttachmentScore(torchmetrics.Metric):
     (and optionally, correct label).
     """
 
-    def __init__(self, labeled: bool):
+    def __init__(self, labeled: bool, ignore_index: int):
         """Initialize the attachment score metric.
 
         Args:
             labeled: compute LAS rather than UAS?
+            ignore_index: index used for padding.
         """
         super().__init__()
         self.labeled = labeled
+        self.ignore_index = ignore_index
         self.add_state(
             "correct", default=torch.tensor(0), dist_reduce_fx="sum"
         )
@@ -61,7 +61,7 @@ class AttachmentScore(torchmetrics.Metric):
                 f"Shape mismatch: hypo_labels {hypo_labels.shape} "
                 f"!= hypo_heads {hypo_heads.shape}"
             )
-        mask = gold_heads != defaults.PAD_IDX
+        mask = gold_heads != self.ignore_index
         heads_correct = (hypo_heads == gold_heads) & mask
         if self.labeled:
             # For LAS, both head and label must be correct.
