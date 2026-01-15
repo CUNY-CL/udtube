@@ -112,11 +112,7 @@ class DataModule(lightning.LightningDataModule):
         lemma_vocabulary = set() if self.use_lemma else None
         feats_vocabulary = set() if self.use_feats else None
         lemma_mapper = mappers.LemmaMapper(self.reverse_edits)
-<<<<<<< HEAD
         deprel_vocabulary = set() if self.use_parse else None
-=======
-        label_vocabulary = set() if self.use_parse else None
->>>>>>> 9872a6f (Beginning integration)
         for tokenlist in conllu.parse_from_path(self.train):
             if self.use_upos:
                 upos_vocabulary.update(token.upos for token in tokenlist)
@@ -130,11 +126,7 @@ class DataModule(lightning.LightningDataModule):
             if self.use_feats:
                 feats_vocabulary.update(token.feats for token in tokenlist)
             if self.use_parse:
-<<<<<<< HEAD
                 deprel_vocabulary.update(token.deprel for token in tokenlist)
-=======
-                label_vocabulary.update(token.label for token in tokenlist)
->>>>>>> 9872a6f (Beginning integration)
         index = indexes.Index(
             reverse_edits=self.reverse_edits,
             upos=(
@@ -153,13 +145,8 @@ class DataModule(lightning.LightningDataModule):
                 if self.use_feats
                 else None
             ),
-<<<<<<< HEAD
             deprel=(
                 indexes.Vocabulary(deprel_vocabulary)
-=======
-            labels=(
-                indexes.Vocabulary(label_vocabulary)
->>>>>>> 9872a6f (Beginning integration)
                 if self.use_parse
                 else None
             ),
