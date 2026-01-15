@@ -73,6 +73,7 @@ class AttachmentScore(torchmetrics.Metric):
         self.total += mask.sum()
 
     def compute(self) -> torch.Tensor:
+        print(self.correct.item(), self.total.item())
         if self.total == 0:
             return torch.tensor(0.0, device=self.device)
         return self.correct.float() / self.total.float()
