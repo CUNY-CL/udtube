@@ -205,7 +205,7 @@ class UDTube(lightning.LightningModule):
                 scheduler.step()
 
     def on_validation_epoch_start(self) -> None:
-        self._reset_accuracies()
+        self._reset_metrics()
 
     def validation_step(
         self,
@@ -214,20 +214,20 @@ class UDTube(lightning.LightningModule):
     ) -> None:
         logits = self(batch)
         self._log_loss(logits, batch, "val")
-        self._update_accuracies(logits, batch)
+        self._update_metrics(logits, batch)
 
     def on_validation_epoch_end(self) -> None:
-        self._log_accuracies_epoch_end("val")
+        self._log_metrics_epoch_end("val")
 
     def on_test_step_epoch_start(self) -> None:
-        self._reset_accuracies()
+        self._reset_metrics()
 
     def test_step(self, batch: data.Batch, batch_idx: int) -> None:
         logits = self(batch)
-        self._update_accuracies(logits, batch)
+        self._update_metrics(logits, batch)
 
     def on_test_epoch_end(self) -> None:
-        self._log_accuracies_epoch_end("test")
+        self._log_metrics_epoch_end("test")
 
     def _log_loss(
         self, logits: data.Logits, batch: data.Batch, subset: str
@@ -235,19 +235,23 @@ class UDTube(lightning.LightningModule):
         losses = []
         if self.use_upos:
             losses.append(self.loss_func(logits.upos, batch.upos))
-            self.upos_accuracy.update(logits.upos, batch.upos)
         if self.use_xpos:
             losses.append(self.loss_func(logits.xpos, batch.xpos))
-            self.xpos_accuracy.update(logits.xpos, batch.xpos)
         if self.use_lemma:
             losses.append(self.loss_func(logits.lemma, batch.lemma))
-            self.lemma_accuracy.update(logits.lemma, batch.lemma)
         if self.use_feats:
             losses.append(self.loss_func(logits.feats, batch.feats))
-            self.feats_accuracy.update(logits.feats, batch.feats)
         if self.use_parse:
-            # FIXME do something.
-            ...
+            head_loss, label_loss = self.classifier.parser.compute_loss(
+                logits.head,
+                batch.head,
+                logits.label,
+                batch.label,
+            )
+            # We weight the two losses as much as a single task.
+            # TODO(kbg): maybe something more sophisticated or general is
+            # required here; test later.
+            losses.append(head_loss / 2 + label_loss / 2)
         loss = torch.sum(torch.stack(losses))
         self.log(
             f"{subset}_loss",
@@ -261,7 +265,7 @@ class UDTube(lightning.LightningModule):
         # We can use the returned loss to step the optimizers.
         return loss
 
-    def _reset_accuracies(self) -> None:
+    def _reset_metrics(self) -> None:
         if self.use_upos:
             self.upos_accuracy.reset()
         if self.use_xpos:
@@ -274,9 +278,7 @@ class UDTube(lightning.LightningModule):
             self.uas.reset()
             self.las.reset()
 
-    def _update_accuracies(
-        self, logits: data.Logits, batch: data.Batch
-    ) -> None:
+    def _update_metrics(self, logits: data.Logits, batch: data.Batch) -> None:
         if self.use_upos:
             self.upos_accuracy.update(logits.upos, batch.upos)
         if self.use_xpos:
@@ -289,7 +291,7 @@ class UDTube(lightning.LightningModule):
             self.uas.update(logits.head, batch.head)
             self.las.update(logits.head, batch.head, logits.label, batch.label)
 
-    def _log_accuracies_epoch_end(self, subset: str) -> None:
+    def _log_metrics_epoch_end(self, subset: str) -> None:
         if self.use_upos:
             self.log(
                 f"{subset}_upos_accuracy",
