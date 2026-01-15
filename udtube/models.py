@@ -269,6 +269,7 @@ class UDTube(lightning.LightningModule):
                 logits.deprel,
                 batch.deprel,
             )
+            # We weight the two losses as much as a single task.
             # TODO(kbg): maybe something more sophisticated or general is
             # required here; test later.
             losses.append(head_loss)

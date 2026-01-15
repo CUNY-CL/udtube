@@ -23,6 +23,7 @@ class BiaffineAttention(nn.Module):
 
     where h_i is the dependent representation and h_j is the head
     representation.
+<<<<<<< HEAD
 
     Args:
         head_size: Size of head representation.
