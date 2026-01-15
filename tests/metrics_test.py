@@ -29,6 +29,10 @@ class UnlabeledAttachmentScoreTest(unittest.TestCase):
     def test_partial_accuracy(self):
         pred_heads = torch.tensor([[3, 3, 6, 5]])
         target_heads = torch.tensor([[3, 3, 4, 5]])
+
+    def test_partial_accuracy(self):
+        pred_heads = torch.tensor([[0, 0, 3, 2]])
+        target_heads = torch.tensor([[0, 0, 1, 2]])
         self.metric.update(pred_heads, target_heads)
         self.assertAlmostEqual(self.metric.compute().item(), 0.75)
 
