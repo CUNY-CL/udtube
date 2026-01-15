@@ -22,10 +22,6 @@ class UDTube(lightning.LightningModule):
         dropout: Dropout probability.
         encoder: Name of the Hugging Face model used to tokenize and encode.
         pooling_layers: Number of layers to use to compute the embedding.
-        reverse_edits: By default, lemmatization rules use reverse-edit
-            scripts, which are appropriate for predominantly suffixal
-            languages. When working with a predominantly prefixal language,
-            disable this by setting this to False.
         use_upos: Enables the universal POS tagging task.
         use_xpos: Enables the language-specific POS tagging task.
         use_lemma: Enables the lemmatization task.
@@ -52,7 +48,6 @@ class UDTube(lightning.LightningModule):
         dropout: float = defaults.DROPOUT,
         encoder: str = defaults.ENCODER,
         pooling_layers: int = defaults.POOLING_LAYERS,
-        reverse_edits: bool = defaults.REVERSE_EDITS,
         use_upos: bool = defaults.USE_UPOS,
         use_xpos: bool = defaults.USE_XPOS,
         use_lemma: bool = defaults.USE_LEMMA,

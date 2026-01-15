@@ -31,7 +31,6 @@ class UDTubeCLI(cli.LightningCLI):
         parser.link_arguments(
             "data.model_dir", "trainer.logger.init_args.save_dir"
         )
-        parser.link_arguments("model.reverse_edits", "data.reverse_edits")
         parser.link_arguments(
             "data.upos_tagset_size",
             "model.upos_out_size",
@@ -53,8 +52,8 @@ class UDTubeCLI(cli.LightningCLI):
             apply_on="instantiate",
         )
         parser.link_arguments(
-            "data.labels_tagset_size",
-            "model.labels_out_size",
+            "data.label_tagset_size",
+            "model.label_out_size",
             apply_on="instantiate",
         )
 
