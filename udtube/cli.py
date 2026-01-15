@@ -52,6 +52,11 @@ class UDTubeCLI(cli.LightningCLI):
             "model.feats_out_size",
             apply_on="instantiate",
         )
+        parser.link_arguments(
+            "data.labels_tagset_size",
+            "model.labels_out_size",
+            apply_on="instantiate",
+        )
 
 
 def main() -> None:

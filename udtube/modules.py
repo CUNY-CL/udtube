@@ -13,7 +13,7 @@ import torch
 from torch import nn
 import transformers
 
-from . import data, defaults, encoders
+from . import data, defaults, encoders, parser
 
 
 class Error(Exception):
@@ -156,35 +156,41 @@ class UDTubeClassifier(lightning.LightningModule):
         use_xpos: enables the language-specific POS tagging task.
         use_lemma: enables the lemmatization task.
         use_feats: enables the morphological feature tagging task.
+        use_parse: enables the dependenchy parsing task.
         upos_out_size: number of UPOS classes; usually set automatically.
         xpos_out_size: number of XPOS classes; usually set automatically.
         lemma_out_size: number of LEMMA classes; usually set automatically.
         feats_out_size: number of FEATS classes; usually set automatically.
     """
 
-    upos_head: Optional[nn.Sequential]
-    xpos_head: Optional[nn.Sequential]
-    lemma_head: Optional[nn.Sequential]
-    feats_head: Optional[nn.Sequential]
+    upos_head: Optional[nn.Linear]
+    xpos_head: Optional[nn.Linear]
+    lemma_head: Optional[nn.Linear]
+    feats_head: Optional[nn.Linear]
+    parse_head: Optional[parser.BiaffineParser]
 
     def __init__(
         self,
         hidden_size: int,
+        *,
         use_upos: bool = defaults.USE_UPOS,
         use_xpos: bool = defaults.USE_XPOS,
         use_lemma: bool = defaults.USE_LEMMA,
         use_feats: bool = defaults.USE_FEATS,
-        *,
+        use_parse: bool = defaults.USE_PARSE,
+        # Specific to the parser.
+        dropout: float = defaults.DROPOUT,
+        arc_mlp_size: int = defaults.MLP_SIZE,
+        label_mlp_size: int = defaults.MLP_SIZE,
         # `2` is a dummy value here; it will be set by the dataset object.
         upos_out_size: int = 2,
         xpos_out_size: int = 2,
         lemma_out_size: int = 2,
         feats_out_size: int = 2,
-        # Optimization and LR scheduling.
-        **kwargs,
+        label_out_size: int = 2,
     ):
         super().__init__()
-        if not any([use_upos, use_xpos, use_lemma, use_feats]):
+        if not any([use_upos, use_xpos, use_lemma, use_feats, use_parse]):
             raise Error("No classification heads enabled")
         self.upos_head = (
             nn.Linear(hidden_size, upos_out_size) if use_upos else None
@@ -197,6 +203,17 @@ class UDTubeClassifier(lightning.LightningModule):
         )
         self.feats_head = (
             nn.Linear(hidden_size, feats_out_size) if use_feats else None
+        )
+        self.parse_head = (
+            parser.BiaffineParser(
+                hidden_size,
+                arc_mlp_size,
+                label_mlp_size,
+                label_out_size,
+                dropout,
+            )
+            if use_parse
+            else None
         )
 
     # Properties.
@@ -217,6 +234,10 @@ class UDTubeClassifier(lightning.LightningModule):
     def use_feats(self) -> bool:
         return self.feats_head is not None
 
+    @property
+    def use_parse(self) -> bool:
+        return self.parse_head is not None
+
     # Forward pass.
 
     def forward(self, encodings: torch.Tensor) -> data.Logits:
@@ -228,11 +249,13 @@ class UDTubeClassifier(lightning.LightningModule):
         transpose to produce this shape.
 
         Args:
-            encodings: the contextual word
+            encodings.
 
         Returns:
             A contextual word-level encoding.
         """
+        if self.use_parse:
+            head, label = self.parser_head(encodings)
         return data.Logits(
             upos=(
                 self.upos_head(encodings).transpose(1, 2)
@@ -254,4 +277,6 @@ class UDTubeClassifier(lightning.LightningModule):
                 if self.use_feats
                 else None
             ),
+            head=head if self.use_parse else None,
+            label=label if self.parse else None,
         )
