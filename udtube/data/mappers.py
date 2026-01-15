@@ -62,27 +62,27 @@ class Mapper:
         """
         return torch.tensor([vocabulary(label) for label in labels])
 
-    def encode_upos(self, labels: Iterable[str]) -> torch.Tensor:
+    def encode_upos(self, tags: Iterable[str]) -> torch.Tensor:
         """Encodes universal POS tags.
 
         Args:
-            labels: iterable of universal POS strings.
+            tags: iterable of universal POS strings.
 
         Returns:
-            Tensor of encoded labels.
+            Tensor of encoded tags.
         """
-        return self._encode(labels, self.index.upos)
+        return self._encode(tags, self.index.upos)
 
-    def encode_xpos(self, labels: Iterable[str]) -> torch.Tensor:
+    def encode_xpos(self, tags: Iterable[str]) -> torch.Tensor:
         """Encodes language-specific POS tags.
 
         Args:
-            labels: iterable of label-specific POS strings.
+            tags: iterable of language-specific POS strings.
 
         Returns:
-            Tensor of encoded labels.
+            Tensor of encoded tags.
         """
-        return self._encode(labels, self.index.xpos)
+        return self._encode(tags, self.index.xpos)
 
     def encode_lemma(
         self, forms: Iterable[str], lemmas: Iterable[str]
@@ -94,7 +94,7 @@ class Mapper:
             lemmas: iterable of lemmas.
 
         Returns:
-            Tensor of encoded labels.
+            Tensor of encoded lemma tags.
         """
         return self._encode(
             [
@@ -104,16 +104,40 @@ class Mapper:
             self.index.lemma,
         )
 
-    def encode_feats(self, labels: Iterable[str]) -> torch.Tensor:
+    def encode_feats(self, tags: Iterable[str]) -> torch.Tensor:
         """Encodes morphological feature tags.
 
         Args:
-            labels: iterable of feature tags.
+            tags: iterable of feature tags.
 
         Returns:
-            Tensor of encoded labels.
+            Tensor of encoded features.
         """
-        return self._encode(labels, self.index.feats)
+        return self._encode(tags, self.index.feats)
+
+    def encode_head(self, indices: Iterable[str]) -> torch.Tensor:
+        """Encodes dependency parsing head indices.
+
+        Args:
+            indices: iterable of head indices.
+
+        Returns:
+            Tensor of encoded head indices.
+
+        """
+        # We add an offset to avoid collisions with special indices.
+        return self._encode(indices, lambda i: int(i) + special.OFFSET)
+
+    def encode_label(self, label: Iterable[str]) -> torch.Tensor:
+        """Encodes dependency parsing arc labels.
+
+        Args:
+            label: iterable of arc labels.
+
+        Returns:
+            Tensor of encoded arc labels.
+        """
+        return self._encode(label, self.index.label)
 
     # Decoding.
 
@@ -129,13 +153,13 @@ class Mapper:
             vocabulary: the vocabulary
 
         Yields:
-            str: decoded symbols.
+            Decoded symbols.
         """
         for idx in indices:
             if idx == special.PAD_IDX:
                 # To avoid sequence length mismatches,
                 # _ is yielded for anything classified as a pad.
-                yield "_"
+                yield special.BLANK
             else:
                 yield vocabulary.get_symbol(idx)
 
@@ -146,7 +170,7 @@ class Mapper:
             indices: tensor of indices.
 
         Yields:
-            str: decoded upos tags.
+            Decoded upos tags.
         """
         return self._decode(indices, self.index.upos)
 
@@ -157,7 +181,7 @@ class Mapper:
             indices: tensor of indices.
 
         Yields:
-            str: decoded xpos tags.
+            Decoded xpos tags.
         """
         return self._decode(indices, self.index.xpos)
 
@@ -171,7 +195,7 @@ class Mapper:
             indices: tensor of indices.
 
         Yields:
-            str: decoded lemmas.
+            Decoded lemmas.
         """
         for form, tag in zip(forms, self._decode(indices, self.index.lemma)):
             yield self.lemma_mapper.lemmatize(form, tag)
@@ -183,6 +207,32 @@ class Mapper:
             indices: tensor of indices.
 
         Yields:
-            str: decoded morphological features.
+            Decoded morphological features.
+        """
+        return self._decode(indices, self.index.feats)
+
+    def decode_head(self, indices: torch.Tensor) -> Iterator[str]:
+        """Encodes dependency parsing head indices.
+
+        Args:
+            indices: iterable of head indices.
+
+        Returns:
+            Decoded head indices, as strings.
+        """
+        for idx in indices:
+            if idx == special.PAD_IDX:
+                yield special.BLANK
+            else:
+                yield str(idx - special.OFFSET)
+
+    def decode_label(self, indices: torch.Tensor) -> Iterator[str]:
+        """Decodes dependency parsing arc labels.
+
+        Args:
+            indices: tensor of indices.
+
+        Yields:
+            Decoded arc labels.
         """
         return self._decode(indices, self.index.feats)

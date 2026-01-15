@@ -30,6 +30,9 @@ class UDTube(lightning.LightningModule):
         use_xpos: Enables the language-specific POS tagging task.
         use_lemma: Enables the lemmatization task.
         use_feats: Enables the morphological feature tagging task.
+        use_parse: Enables the dependenchy parsing task.
+        arc_mlp_size: Size of the arc MLP for dependency parsing.
+        label_mlp_size: Size of the label MLP for dependency parsing.
     """
 
     encoder: modules.UDTubeEncoder
@@ -40,9 +43,12 @@ class UDTube(lightning.LightningModule):
     xpos_accuracy: Optional[classification.MulticlassAccuracy]
     lemma_accuracy: Optional[classification.MulticlassAccuracy]
     feats_accuracy: Optional[classification.MulticlassAccuracy]
+    uas: Optional[metrics.UnlabeledAttachmentScore]
+    las: Optional[metrics.LabeledAttachmentScore]
 
     def __init__(
         self,
+        *,
         dropout: float = defaults.DROPOUT,
         encoder: str = defaults.ENCODER,
         pooling_layers: int = defaults.POOLING_LAYERS,
@@ -52,11 +58,15 @@ class UDTube(lightning.LightningModule):
         use_lemma: bool = defaults.USE_LEMMA,
         use_feats: bool = defaults.USE_FEATS,
         use_parse: bool = defaults.USE_PARSE,
-        *,
+        # Specific to the parser.
+        arc_mlp_size: int = defaults.MLP_SIZE,
+        label_mlp_size: int = defaults.MLP_SIZE,
+        # Optimization.
         encoder_optimizer: cli.OptimizerCallable = defaults.OPTIMIZER,
         encoder_scheduler: cli.LRSchedulerCallable = defaults.SCHEDULER,
         classifier_optimizer: cli.OptimizerCallable = defaults.OPTIMIZER,
         classifier_scheduler: cli.LRSchedulerCallable = defaults.SCHEDULER,
+        # Dummy values.
         upos_out_size: int = 2,  # Dummy value filled in via link.
         xpos_out_size: int = 2,  # Dummy value filled in via link.
         lemma_out_size: int = 2,  # Dummy value filled in via link.
@@ -70,11 +80,14 @@ class UDTube(lightning.LightningModule):
         self.encoder = modules.UDTubeEncoder(dropout, encoder, pooling_layers)
         self.classifier = modules.UDTubeClassifier(
             self.encoder.hidden_size,
-            use_upos,
-            use_xpos,
-            use_lemma,
-            use_feats,
-            use_parse,
+            use_upos=use_upos,
+            use_xpos=use_xpos,
+            use_lemma=use_lemma,
+            use_feats=use_feats,
+            use_parse=use_parse,
+            dropout=dropout,
+            arc_mlp_size=arc_mlp_size,
+            label_mlp_size=label_mlp_size,
             upos_out_size=upos_out_size,
             xpos_out_size=xpos_out_size,
             lemma_out_size=lemma_out_size,
@@ -248,9 +261,9 @@ class UDTube(lightning.LightningModule):
                 logits.label,
                 batch.label,
             )
-            # We weight the two losses as much as a single task.
             # TODO(kbg): maybe something more sophisticated or general is
             # required here; test later.
+            # We weight the two losses as much as a single task.
             losses.append(head_loss / 2 + label_loss / 2)
         loss = torch.sum(torch.stack(losses))
         self.log(

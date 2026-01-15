@@ -93,6 +93,20 @@ class Collator:
                 if itemlist[0].use_feats
                 else None
             ),
+            head=(
+                (
+                    self.pad_tensors([item.head for item in itemlist])
+                    if itemlist[0].use_head
+                    else None
+                ),
+            ),
+            label=(
+                (
+                    self.pad_tensors([item.label for item in itemlist])
+                    if itemlist[0].use_label
+                    else None
+                ),
+            ),
         )
 
     @staticmethod

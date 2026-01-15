@@ -52,5 +52,9 @@ class Logits(nn.Module):
         return self.feats is not None
 
     @property
-    def use_parse(self) -> bool:
-        return self.head is not None and self.label is not None
+    def use_head(self) -> bool:
+        return self.head is not None
+
+    @property
+    def use_label(self) -> bool:
+        return self.label is not None

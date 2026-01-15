@@ -68,6 +68,12 @@ class PredictionWriter(callbacks.BasePredictionWriter):
         feats_hat = (
             torch.argmax(logits.feats, dim=1) if logits.use_feats else None
         )
+        head_hat = (
+            torch.argmax(logits.head, dim=1) if logits.use_head else None
+        )
+        label_hat = (
+            torch.argmax(logits.label, dim=1) if logits.use_label else None
+        )
         for i, tokenlist in enumerate(batch.tokenlists):
             # Sentence-level decoding of the classification indices, followed
             # by rewriting the fields in the tokenlist.
@@ -85,6 +91,12 @@ class PredictionWriter(callbacks.BasePredictionWriter):
             if feats_hat is not None:
                 feats_it = mapper.decode_feats(feats_hat[i, :])
                 self._fill_in_tags(tokenlist, "feats", feats_it)
+            if head_hat is not None:
+                head_it = mapper.decode_head(head_hat[i, :])
+                self._fill_in_tags(tokenlist, "head", head_it)
+            if label_hat is not None:
+                label_it = mapper.decode_label(label_hat[i, :])
+                self._fill_in_tags(tokenlist, "label", label_it)
             print(tokenlist, file=self.sink)
         self.sink.flush()
 
@@ -95,9 +107,9 @@ class PredictionWriter(callbacks.BasePredictionWriter):
         """Helper method for copying tags into tokenlist.
 
         Args:
-            tokenlist (data.conllu.TokenList): tokenlist to insert into.
-            attr (str): attribute on tokens where the tags should be inserted.
-            tags (Iterator[str]): tags to insert.
+            tokenlist: tokenlist to insert into.
+            attr: attribute on tokens where the tags should be inserted.
+            tags: iterator over tags to insert.
         """
         # Note that when MWEs are present, the iterators with predicted tags
         # from the classifier heads are shorter than the tokenlists, so we
