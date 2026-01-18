@@ -32,44 +32,44 @@ class AttachmentScore(torchmetrics.Metric):
 
     def update(
         self,
-        hypo_heads: torch.Tensor,
-        gold_heads: torch.Tensor,
-        hypo_deprels: torch.Tensor | None = None,
-        gold_deprels: torch.Tensor | None = None,
+        hypo_head: torch.Tensor,
+        gold_head: torch.Tensor,
+        hypo_deprel: torch.Tensor | None = None,
+        gold_deprel: torch.Tensor | None = None,
     ) -> None:
         """Accumulates sufficient statistics for a batch.
 
         Args:
-            hypo_heads.
-            gold_heads.
-            hypo_deprels: required if `labeled=True`.
-            gold_deprels: required if `labeled=True`.
+            hypo_head.
+            gold_head.
+            hypo_deprel: required if `labeled=True`.
+            gold_deprel: required if `labeled=True`.
         """
-        assert hypo_heads.shape == gold_heads.shape, (
-            f"Shape mismatch: hypo_heads {hypo_heads.shape} "
-            f"!= gold_heads {gold_heads.shape}"
+        assert hypo_head.shape == gold_head.shape, (
+            f"Shape mismatch: hypo_head {hypo_head.shape} "
+            f"!= gold_head {gold_head.shape}"
         )
         if self.labeled:
             assert (
-                hypo_deprels is not None and gold_deprels is not None
+                hypo_deprel is not None and gold_deprel is not None
             ), "Labels required for labeled attachment score"
-            assert hypo_deprels.shape == gold_deprels.shape, (
-                f"Shape mismatch: hypo_deprels {hypo_deprels.shape} "
-                f"!= gold_deprels {gold_deprels.shape}"
+            assert hypo_deprel.shape == gold_deprel.shape, (
+                f"Shape mismatch: hypo_deprel {hypo_deprel.shape} "
+                f"!= gold_deprel {gold_deprel.shape}"
             )
-            assert hypo_deprels.shape == hypo_heads.shape, (
-                f"Shape mismatch: hypo_deprels {hypo_deprels.shape} "
-                f"!= hypo_heads {hypo_heads.shape}"
+            assert hypo_deprel.shape == hypo_head.shape, (
+                f"Shape mismatch: hypo_deprel {hypo_deprel.shape} "
+                f"!= hypo_head {hypo_head.shape}"
             )
-        mask = gold_heads != self.ignore_index
-        heads_correct = (hypo_heads == gold_heads) & mask
+        mask = gold_head != self.ignore_index
+        head_correct = (hypo_head == gold_head) & mask
         if self.labeled:
             # For LAS, both head and deprel must be correct.
-            deprels_correct = (hypo_deprels == gold_deprels) & mask
-            self.correct += torch.sum(heads_correct & deprels_correct)
+            deprel_correct = (hypo_deprel == gold_deprel) & mask
+            self.correct += torch.sum(head_correct & deprel_correct)
         else:
             # For UAS, only head needs to be correct.
-            self.correct += heads_correct.sum()
+            self.correct += head_correct.sum()
         self.total += mask.sum()
 
     def compute(self) -> torch.Tensor:

@@ -54,8 +54,8 @@ class UDTube(lightning.LightningModule):
         use_feats: bool = defaults.USE_FEATS,
         use_parse: bool = defaults.USE_PARSE,
         # Specific to the parser.
-        arc_mlp_size: int = defaults.MLP_SIZE,
-        deprel_mlp_size: int = defaults.MLP_SIZE,
+        arc_mlp_size: int = defaults.ARC_MLP_SIZE,
+        deprel_mlp_size: int = defaults.DEPREL_MLP_SIZE,
         # Optimization.
         encoder_optimizer: cli.OptimizerCallable = defaults.OPTIMIZER,
         encoder_scheduler: cli.LRSchedulerCallable = defaults.SCHEDULER,

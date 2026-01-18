@@ -190,8 +190,8 @@ class UDTubeClassifier(lightning.LightningModule):
         use_parse: bool = defaults.USE_PARSE,
         # Specific to the parser.
         dropout: float = defaults.DROPOUT,
-        arc_mlp_size: int = defaults.MLP_SIZE,
-        deprel_mlp_size: int = defaults.MLP_SIZE,
+        arc_mlp_size: int = defaults.ARC_MLP_SIZE,
+        deprel_mlp_size: int = defaults.DEPREL_MLP_SIZE,
         # `2` is a dummy value here; it will be set by the dataset object.
         upos_out_size: int = 2,
         xpos_out_size: int = 2,

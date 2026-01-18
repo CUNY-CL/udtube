@@ -28,7 +28,7 @@ class BiaffineAttention(nn.Module):
         head_size: Size of head representation.
         dep_size: Size of dependency representation.
         out_size: Output dimension; use 1 for head scores and the number of
-            unique deprels for deprel scores.
+            unique depependency relations for deprel scores.
     """
 
     head_size: int
@@ -87,7 +87,7 @@ class BiaffineParser(nn.Module):
     This takes the encoder outputs and predicts:
 
     * Head indices for each token.
-    * Dependency deprels for each arc.
+    * Dependency dependency relations for each arc.
 
     Following Dozat & Manning, we apply separate MLPs to reduce dimensionality
     before the biaffine classifiers.
@@ -113,9 +113,9 @@ class BiaffineParser(nn.Module):
     def __init__(
         self,
         hidden_size,
-        arc_mlp_size: int = defaults.MLP_SIZE,
-        deprel_mlp_size: int = defaults.MLP_SIZE,
-        num_deprels: int = 2,  # Dummy value filled in via link.
+        arc_mlp_size: int = defaults.ARC_MLP_SIZE,
+        deprel_mlp_size: int = defaults.DEPREL_MLP_SIZE,
+        num_deprel: int = 2,  # Dummy value filled in via link.
         dropout: float = defaults.DROPOUT,
     ):
         super().__init__()
@@ -135,7 +135,7 @@ class BiaffineParser(nn.Module):
         self.deprel_attention = BiaffineAttention(
             deprel_mlp_size,
             deprel_mlp_size,
-            num_deprels,
+            num_deprel,
         )
         self.loss_func = nn.CrossEntropyLoss(ignore_index=special.PAD_IDX)
 
@@ -160,14 +160,22 @@ class BiaffineParser(nn.Module):
         )
 
     @staticmethod
-    def _shift_heads(heads: torch.Tensor) -> torch.Tensor:
+    def _shift_head(head: torch.Tensor) -> torch.Tensor:
         """Converts indices to internal representation."""
-        return heads + special.OFFSET
+        return torch.where(
+            head == special.PAD_IDX,
+            head,
+            head + special.OFFSET,
+        )
 
     @staticmethod
-    def _unshift_heads(heads: torch.Tensor) -> torch.Tensor:
+    def _unshift_head(head: torch.Tensor) -> torch.Tensor:
         """Converts internal representation to indices."""
-        return heads - special.OFFSET
+        return torch.where(
+            head == special.PAD_IDX,
+            head,
+            head - special.OFFSET,
+        )
 
     def forward(
         self,
@@ -212,9 +220,9 @@ class BiaffineParser(nn.Module):
     def compute_loss(
         self,
         head_logits: torch.Tensor,
-        gold_heads: torch.Tensor,
+        gold_head: torch.Tensor,
         deprel_logits: torch.Tensor,
-        gold_deprels: torch.Tensor,
+        gold_deprel: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Compute head and deprel cross-entropy losses.
 
@@ -226,36 +234,35 @@ class BiaffineParser(nn.Module):
 
         Args:
             head_logits: Head scores.
-            gold_heads: Gold head indices.
-            deprel_logits: Label scores.
-            gold_deprels: Gold dependency deprels.
+            gold_head: Gold head indices.
+            deprel_logits: dependency relation scores.
+            gold_deprel: Gold dependency relations.
 
         Returns:
-            Losses for head and deprels.
+            The two losses.
         """
-        gold_heads = self._shift_heads(gold_heads)
+        gold_head = self._unshift_head(gold_head)
         head_loss = self.loss_func(
             head_logits.reshape(-1, head_logits.size(-1)),
-            gold_heads.reshape(-1),
+            gold_head.reshape(-1),
         )
         length = deprel_logits.size(1)
-        num_deprels = deprel_logits.size(3)
-        gold_heads_expanded = (
-            gold_heads.unsqueeze(-1)
+        num_deprel = deprel_logits.size(3)
+        gold_head_expanded = (
+            gold_head.unsqueeze(-1)
             .unsqueeze(-1)
-            .expand(-1, length, 1, num_deprels)
+            .expand(-1, length, 1, num_deprel)
         )
         # Selects the appropriate deprel logits.
         selected_deprel_logits = torch.gather(
             deprel_logits,
             dim=2,
-            index=gold_heads_expanded,
+            index=gold_head_expanded,
         ).squeeze(2)
-        # TODO: consider having the caller pass in the
-        # loss function object instead.
+        # TODO: consider having the caller pass in the loss function object.
         deprel_loss = self.loss_func(
-            selected_deprel_logits.reshape(-1, num_deprels),
-            gold_deprels.reshape(-1),
+            selected_deprel_logits.reshape(-1, num_deprel),
+            gold_deprel.reshape(-1),
         )
         return head_loss, deprel_loss
 
@@ -275,25 +282,24 @@ class BiaffineParser(nn.Module):
             mask: Attention mask of shape N x L.
 
         Returns:
-            pred_heads: Predicted head indices of shape N x L.
-            pred_deprels: Predicted deprels of shape N x L.
+            Predicted head and deprel.
         """
         # FIXME indices.
-        pred_heads = head_logits.argmax(dim=-1)
-        pred_heads.masked_fill_(~mask, special.PAD_IDX)
+        pred_head = head_logits.argmax(dim=-1)
+        pred_head.masked_fill_(~mask, special.PAD_IDX)
         batch_size = deprel_logits.size(0)
         length = deprel_logits.size(1)
-        num_deprels = deprel_logits.size(3)
-        pred_heads_expanded = (
-            pred_heads.unsqueeze(-1)
+        num_deprel = deprel_logits.size(3)
+        pred_head_expanded = (
+            pred_head.unsqueeze(-1)
             .unsqueeze(-1)
-            .expand(batch_size, length, 1, num_deprels)
+            .expand(batch_size, length, 1, num_deprel)
         )
         selected_deprel_logits = torch.gather(
-            deprel_logits, dim=2, index=pred_heads_expanded
+            deprel_logits, dim=2, index=pred_head_expanded
         )
         # FIXME indices.
-        pred_deprels = selected_deprel_logits.squeeze(2).argmax(dim=-1)
-        pred_heads = self._unshift_heads(pred_heads)
-        pred_deprels.masked_fill_(~mask, special.PAD_IDX)
-        return pred_heads, pred_deprels
+        pred_deprel = selected_deprel_logits.squeeze(2).argmax(dim=-1)
+        pred_head = self._shift_head(pred_head)
+        pred_deprel.masked_fill_(~mask, special.PAD_IDX)
+        return pred_head, pred_deprel

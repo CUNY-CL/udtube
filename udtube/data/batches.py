@@ -15,12 +15,13 @@ class Batch(nn.Module):
     Args:
         tokenlists: list of TokenLists.
         tokens: batch encoding from the transformer.
-        pos: optional padded tensor of universal POS deprels.
-        xpos: optional padded tensor of language-specific POS deprels.
-        lemma: optional padded tensor of lemma deprels.
-        feats: optional padded tensor of morphological feature deprels.
+        pos: optional padded tensor of universal POS tags.
+        xpos: optional padded tensor of language-specific POS tag.
+        lemma: optional padded tensor of lemma tags.
+        feats: optional padded tensor of morphological feature tags.
         head: optional padded tensor of dependency parser head indices.
-        deprel: optional padded tensor of dependency parser arc deprels.
+        deprel: optional padded tensor of dependency parser dependency
+            relations.
     """
 
     tokenlists: List[conllu.TokenList]
