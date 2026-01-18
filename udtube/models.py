@@ -83,6 +83,8 @@ class UDTube(lightning.LightningModule):
             use_feats=use_feats,
             use_parse=use_parse,
             dropout=dropout,
+            arc_mlp_size=arc_mlp_size,
+            deprel_mlp_size=deprel_mlp_size,
             upos_out_size=upos_out_size,
             xpos_out_size=xpos_out_size,
             lemma_out_size=lemma_out_size,
