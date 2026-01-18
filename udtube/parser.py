@@ -29,7 +29,6 @@ class BiaffineAttention(nn.Module):
         dep_size: Size of dependency representation.
         out_size: Output dimension; use 1 for head scores and the number of
             unique depependency relations for deprel scores.
-            unique labels for label scores.
     """
 
     head_size: int
