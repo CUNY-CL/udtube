@@ -129,7 +129,7 @@ class DataModule(lightning.LightningDataModule):
         lemma_vocabulary = set() if self.use_lemma else None
         feats_vocabulary = set() if self.use_feats else None
         lemma_mapper = mappers.LemmaMapper(self.reverse_edits)
-        label_vocabulary = set() if self.use_parse else None
+        deprel_vocabulary = set() if self.use_parse else None
         for tokenlist in conllu.parse_from_path(self.train):
             # We don't need to collect the upos vocabulary because "u"
             # stands for "universal" here.
@@ -143,7 +143,7 @@ class DataModule(lightning.LightningDataModule):
             if self.use_feats:
                 feats_vocabulary.update(token.feats for token in tokenlist)
             if self.use_parse:
-                label_vocabulary.update(token.label for token in tokenlist)
+                deprel_vocabulary.update(token.deprel for token in tokenlist)
         index = indexes.Index(
             reverse_edits=self.reverse_edits,
             upos=(
@@ -164,8 +164,8 @@ class DataModule(lightning.LightningDataModule):
                 if self.use_feats
                 else None
             ),
-            labels=(
-                indexes.Vocabulary(label_vocabulary)
+            deprel=(
+                indexes.Vocabulary(deprel_vocabulary)
                 if self.use_parse
                 else None
             ),
@@ -194,8 +194,8 @@ class DataModule(lightning.LightningDataModule):
         return len(self.index.feats) if self.use_feats else 0
 
     @property
-    def label_tagset_size(self) -> int:
-        return len(self.index.label) if self.use_parse else 0
+    def deprel_tagset_size(self) -> int:
+        return len(self.index.deprel) if self.use_parse else 0
 
     # Required API.
 

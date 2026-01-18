@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import Iterable, Iterator
+from typing import Callable, Iterable, Iterator
 
 import torch
 
@@ -48,19 +48,20 @@ class Mapper:
 
     @staticmethod
     def _encode(
-        labels: Iterable[str],
-        vocabulary: indexes.Vocabulary,
+        deprels: Iterable[str],
+        functor: Callable[[str], int],
     ) -> torch.Tensor:
         """Encodes a tensor.
 
         Args:
-            labels: iterable of labels.
-            vocabulary: a vocabulary.
+            deprels: iterable of deprels.
+            functor: a callable mapping from strings to integers; usually
+                this is the vocabulary object.
 
         Returns:
-            Tensor of encoded labels.
+            Tensor of encoded deprels.
         """
-        return torch.tensor([vocabulary(label) for label in labels])
+        return torch.tensor([functor(deprel) for deprel in deprels])
 
     def encode_upos(self, tags: Iterable[str]) -> torch.Tensor:
         """Encodes universal POS tags.
@@ -125,32 +126,33 @@ class Mapper:
             Tensor of encoded head indices.
 
         """
-        # We add an offset to avoid collisions with special indices.
-        return self._encode(indices, lambda i: int(i) + special.OFFSET)
+        # Cheeky, but it works.
+        return self._encode(indices, int)
 
-    def encode_label(self, label: Iterable[str]) -> torch.Tensor:
-        """Encodes dependency parsing arc labels.
+    def encode_deprel(self, deprel: Iterable[str]) -> torch.Tensor:
+        """Encodes dependency parsing arc deprels.
 
         Args:
-            label: iterable of arc labels.
+            deprel: iterable of arc deprels.
 
         Returns:
-            Tensor of encoded arc labels.
+            Tensor of encoded arc deprels.
         """
-        return self._encode(label, self.index.label)
+        return self._encode(deprel, self.index.deprel)
 
     # Decoding.
 
     @staticmethod
     def _decode(
         indices: torch.Tensor,
-        vocabulary: indexes.Vocabulary,
+        functor: Callable[[int], str],
     ) -> Iterator[str]:
         """Decodes a tensor.
 
         Args:
             indices: tensor of indices.
-            vocabulary: the vocabulary
+            functor: a callable mapping from strings to integers; usually
+                this is the vocabulary object's `get_symbol` method.
 
         Yields:
             Decoded symbols.
@@ -161,7 +163,7 @@ class Mapper:
                 # _ is yielded for anything classified as a pad.
                 yield special.BLANK
             else:
-                yield vocabulary.get_symbol(idx)
+                yield functor(idx)
 
     def decode_upos(self, indices: torch.Tensor) -> Iterator[str]:
         """Decodes an upos tensor.
@@ -172,7 +174,7 @@ class Mapper:
         Yields:
             Decoded upos tags.
         """
-        return self._decode(indices, self.index.upos)
+        return self._decode(indices, self.index.upos.get_symbol)
 
     def decode_xpos(self, indices: torch.Tensor) -> Iterator[str]:
         """Decodes an xpos tensor.
@@ -183,7 +185,7 @@ class Mapper:
         Yields:
             Decoded xpos tags.
         """
-        return self._decode(indices, self.index.xpos)
+        return self._decode(indices, self.index.xpos.get_symbol)
 
     def decode_lemma(
         self, forms: Iterable[str], indices: torch.Tensor
@@ -197,7 +199,9 @@ class Mapper:
         Yields:
             Decoded lemmas.
         """
-        for form, tag in zip(forms, self._decode(indices, self.index.lemma)):
+        for form, tag in zip(
+            forms, self._decode(indices, self.index.lemma.get_symbol)
+        ):
             yield self.lemma_mapper.lemmatize(form, tag)
 
     def decode_feats(self, indices: torch.Tensor) -> Iterator[str]:
@@ -209,7 +213,7 @@ class Mapper:
         Yields:
             Decoded morphological features.
         """
-        return self._decode(indices, self.index.feats)
+        return self._decode(indices, self.index.feats.get_symbol)
 
     def decode_head(self, indices: torch.Tensor) -> Iterator[str]:
         """Encodes dependency parsing head indices.
@@ -220,19 +224,15 @@ class Mapper:
         Returns:
             Decoded head indices, as strings.
         """
-        for idx in indices:
-            if idx == special.PAD_IDX:
-                yield special.BLANK
-            else:
-                yield str(idx - special.OFFSET)
+        return self._decode(indices, lambda idx: str(idx.item()))
 
-    def decode_label(self, indices: torch.Tensor) -> Iterator[str]:
-        """Decodes dependency parsing arc labels.
+    def decode_deprel(self, indices: torch.Tensor) -> Iterator[str]:
+        """Decodes dependency parsing arc deprels.
 
         Args:
             indices: tensor of indices.
 
         Yields:
-            Decoded arc labels.
+            Decoded arc deprels.
         """
-        return self._decode(indices, self.index.feats)
+        return self._decode(indices, self.index.deprel.get_symbol)

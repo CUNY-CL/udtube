@@ -10,8 +10,7 @@ ENCODING = "utf-8"
 
 # Architecture arguments.
 ENCODER = "google-bert/bert-base-multilingual-cased"
-ARC_MLP_SIZE = 524
-LABEL_MLP_SIZE = 128
+MLP_SIZE = 256
 POOLING_LAYERS = 4
 REVERSE_EDITS = True
 USE_UPOS = True

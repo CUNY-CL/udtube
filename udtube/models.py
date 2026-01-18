@@ -1,6 +1,6 @@
 """The UDTube model."""
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import lightning
 from lightning.pytorch import cli
@@ -28,7 +28,7 @@ class UDTube(lightning.LightningModule):
         use_feats: Enables the morphological feature tagging task.
         use_parse: Enables the dependenchy parsing task.
         arc_mlp_size: Size of the arc MLP for dependency parsing.
-        label_mlp_size: Size of the label MLP for dependency parsing.
+        deprel_mlp_size: Size of the deprel MLP for dependency parsing.
     """
 
     encoder: modules.UDTubeEncoder
@@ -39,8 +39,8 @@ class UDTube(lightning.LightningModule):
     xpos_accuracy: Optional[classification.MulticlassAccuracy]
     lemma_accuracy: Optional[classification.MulticlassAccuracy]
     feats_accuracy: Optional[classification.MulticlassAccuracy]
-    uas: Optional[metrics.UnlabeledAttachmentScore]
-    las: Optional[metrics.LabeledAttachmentScore]
+    unlabeled_score: Optional[metrics.UnlabeledAttachmentScore]
+    labeled_score: Optional[metrics.LabeledAttachmentScore]
 
     def __init__(
         self,
@@ -55,7 +55,7 @@ class UDTube(lightning.LightningModule):
         use_parse: bool = defaults.USE_PARSE,
         # Specific to the parser.
         arc_mlp_size: int = defaults.MLP_SIZE,
-        label_mlp_size: int = defaults.MLP_SIZE,
+        deprel_mlp_size: int = defaults.MLP_SIZE,
         # Optimization.
         encoder_optimizer: cli.OptimizerCallable = defaults.OPTIMIZER,
         encoder_scheduler: cli.LRSchedulerCallable = defaults.SCHEDULER,
@@ -66,7 +66,7 @@ class UDTube(lightning.LightningModule):
         xpos_out_size: int = 2,  # Dummy value filled in via link.
         lemma_out_size: int = 2,  # Dummy value filled in via link.
         feats_out_size: int = 2,  # Dummy value filled in via link.
-        label_out_size: int = 2,  # Dummy value filled in via link.
+        deprel_out_size: int = 2,  # Dummy value filled in via link.
     ):
         super().__init__()
         # See what this disables here:
@@ -82,12 +82,12 @@ class UDTube(lightning.LightningModule):
             use_parse=use_parse,
             dropout=dropout,
             arc_mlp_size=arc_mlp_size,
-            label_mlp_size=label_mlp_size,
+            deprel_mlp_size=deprel_mlp_size,
             upos_out_size=upos_out_size,
             xpos_out_size=xpos_out_size,
             lemma_out_size=lemma_out_size,
             feats_out_size=feats_out_size,
-            label_out_size=label_out_size,
+            deprel_out_size=deprel_out_size,
         )
         self.loss_func = nn.CrossEntropyLoss(ignore_index=special.PAD_IDX)
         self.upos_accuracy = (
@@ -102,12 +102,12 @@ class UDTube(lightning.LightningModule):
         self.feats_accuracy = (
             self._make_accuracy(feats_out_size) if use_feats else None
         )
-        self.uas = (
+        self.unlabeled_score = (
             metrics.UnlabeledAttachmentScore(ignore_index=special.PAD_IDX)
             if use_parse
             else None
         )
-        self.las = (
+        self.labeled_score = (
             metrics.LabeledAttachmentScore(ignore_index=special.PAD_IDX)
             if use_parse
             else None
@@ -147,8 +147,9 @@ class UDTube(lightning.LightningModule):
     def forward(
         self,
         batch: data.Batch,
-    ) -> data.Logits:
-        return self.classifier(self.encoder(batch))
+    ) -> Tuple[data.Logits, torch.Tensor]:
+        encoding, mask = self.encoder(batch)
+        return self.classifier(encoding, mask), mask
 
     def configure_optimizers(
         self,
@@ -185,7 +186,9 @@ class UDTube(lightning.LightningModule):
         if torch.are_deterministic_algorithms_enabled():
             torch.use_deterministic_algorithms(True, warn_only=True)
 
-    def predict_step(self, batch: data.Batch, batch_idx: int) -> data.Logits:
+    def predict_step(
+        self, batch: data.Batch, batch_idx: int
+    ) -> Tuple[data.Logits, torch.Tensor]:
         return self(batch)
 
     def training_step(
@@ -195,7 +198,7 @@ class UDTube(lightning.LightningModule):
     ) -> None:
         for optimizer in self.optimizers():
             optimizer.zero_grad()
-        logits = self(batch)
+        logits, _ = self(batch)
         loss = self._log_loss(logits, batch, "train")
         self.manual_backward(loss)
         for optimizer in self.optimizers():
@@ -220,9 +223,9 @@ class UDTube(lightning.LightningModule):
         batch: data.Batch,
         batch_idx: int,
     ) -> None:
-        logits = self(batch)
+        logits, mask = self(batch)
         self._log_loss(logits, batch, "val")
-        self._update_metrics(logits, batch)
+        self._update_metrics(logits, batch, mask)
 
     def on_validation_epoch_end(self) -> None:
         self._log_metrics_epoch_end("val")
@@ -231,8 +234,8 @@ class UDTube(lightning.LightningModule):
         self._reset_metrics()
 
     def test_step(self, batch: data.Batch, batch_idx: int) -> None:
-        logits = self(batch)
-        self._update_metrics(logits, batch)
+        logits, mask = self(batch)
+        self._update_metrics(logits, batch, mask)
 
     def on_test_epoch_end(self) -> None:
         self._log_metrics_epoch_end("test")
@@ -250,16 +253,16 @@ class UDTube(lightning.LightningModule):
         if self.use_feats:
             losses.append(self.loss_func(logits.feats, batch.feats))
         if self.use_parse:
-            head_loss, label_loss = self.classifier.parser.compute_loss(
+            head_loss, deprel_loss = self.classifier.parse_head.compute_loss(
                 logits.head,
                 batch.head,
-                logits.label,
-                batch.label,
+                logits.deprel,
+                batch.deprel,
             )
             # TODO(kbg): maybe something more sophisticated or general is
             # required here; test later.
-            # We weight the two losses as much as a single task.
-            losses.append(head_loss / 2 + label_loss / 2)
+            losses.append(head_loss)
+            losses.append(deprel_loss)
         loss = torch.sum(torch.stack(losses))
         self.log(
             f"{subset}_loss",
@@ -283,10 +286,12 @@ class UDTube(lightning.LightningModule):
         if self.use_feats:
             self.feats_accuracy.reset()
         if self.use_parse:
-            self.uas.reset()
-            self.las.reset()
+            self.unlabeled_score.reset()
+            self.labeled_score.reset()
 
-    def _update_metrics(self, logits: data.Logits, batch: data.Batch) -> None:
+    def _update_metrics(
+        self, logits: data.Logits, batch: data.Batch, mask: torch.Tensor
+    ) -> None:
         if self.use_upos:
             self.upos_accuracy.update(logits.upos, batch.upos)
         if self.use_xpos:
@@ -296,8 +301,11 @@ class UDTube(lightning.LightningModule):
         if self.use_feats:
             self.feats_accuracy.update(logits.feats, batch.feats)
         if self.use_parse:
-            self.uas.update(logits.head, batch.head)
-            self.las.update(logits.head, batch.head, logits.label, batch.label)
+            head, deprel = self.classifier.parse_head.decode(
+                logits.head, logits.deprel, mask
+            )
+            self.unlabeled_score.update(head, batch.head)
+            self.labeled_score.update(head, batch.head, deprel, batch.deprel)
 
     def _log_metrics_epoch_end(self, subset: str) -> None:
         if self.use_upos:
@@ -334,15 +342,15 @@ class UDTube(lightning.LightningModule):
             )
         if self.use_parse:
             self.log(
-                f"{subset}_uas",
-                self.uas.compute(),
+                f"{subset}_unlabeled_score",
+                self.unlabeled_score.compute(),
                 on_epoch=True,
                 logger=True,
                 prog_bar=True,
             )
             self.log(
-                f"{subset}_las",
-                self.las.compute(),
+                f"{subset}_labeled_score",
+                self.labeled_score.compute(),
                 on_epoch=True,
                 logger=True,
                 prog_bar=True,

@@ -28,7 +28,7 @@ class BiaffineAttention(nn.Module):
         head_size: Size of head representation.
         dep_size: Size of dependency representation.
         out_size: Output dimension; use 1 for head scores and the number of
-            unique labels for label scores.
+            unique deprels for deprel scores.
     """
 
     head_size: int
@@ -43,8 +43,11 @@ class BiaffineAttention(nn.Module):
         out_size: int = 1,
     ):
         super().__init__()
+        self.head_size = head_size
+        self.dep_size = dep_size
+        self.out_size = out_size
         self.weight = nn.Parameter(
-            torch.zeros(out_size, head_size + 1, dep_size + 1)
+            torch.zeros(self.out_size, self.head_size + 1, self.dep_size + 1)
         )
         nn.init.xavier_uniform_(self.weight)
 
@@ -79,56 +82,60 @@ class BiaffineAttention(nn.Module):
 
 
 class BiaffineParser(nn.Module):
-    """Biaffine parser for dependency arc and label prediction.
+    """Biaffine parser for dependency arc and deprel prediction.
 
     This takes the encoder outputs and predicts:
 
     * Head indices for each token.
-    * Dependency labels for each arc.
+    * Dependency deprels for each arc.
 
     Following Dozat & Manning, we apply separate MLPs to reduce dimensionality
     before the biaffine classifiers.
 
+    Head data is interpreted as indices, but these indices can collide with
+    the 0 used for padding. We therefore shift and unshift the data to avoid
+    this collision.
+
     Args:
         arc_mlp_size: Hidden layer size for arc MLP.
-        label_mlp_size: Hidden layer size for label MLP.
+        deprel_mlp_size: Hidden layer size for deprel MLP.
         dropout: Dropout probability for MLP layers
     """
 
     arc_head_mlp: nn.Module
     arc_dep_mlp: nn.Module
-    arc_label_head_mlp: nn.Module
-    arc_label_dep_mlp: nn.Module
+    arc_deprel_head_mlp: nn.Module
+    arc_deprel_dep_mlp: nn.Module
     arc_attention: BiaffineAttention
-    label_attention: BiaffineAttention
+    deprel_attention: BiaffineAttention
     loss_func: nn.CrossEntropyLoss
 
     def __init__(
         self,
         hidden_size,
         arc_mlp_size: int = defaults.MLP_SIZE,
-        label_mlp_size: int = defaults.MLP_SIZE,
-        num_labels: int = 2,  # Dummy value filled in via link.
+        deprel_mlp_size: int = defaults.MLP_SIZE,
+        num_deprels: int = 2,  # Dummy value filled in via link.
         dropout: float = defaults.DROPOUT,
     ):
         super().__init__()
         self.arc_head_mlp = self._make_mlp(hidden_size, arc_mlp_size, dropout)
         self.arc_dep_mlp = self._make_mlp(hidden_size, arc_mlp_size, dropout)
-        self.label_head_mlp = self._make_mlp(
-            hidden_size, label_mlp_size, dropout
+        self.deprel_head_mlp = self._make_mlp(
+            hidden_size, deprel_mlp_size, dropout
         )
-        self.label_dep_mlp = self._make_mlp(
-            hidden_size, label_mlp_size, dropout
+        self.deprel_dep_mlp = self._make_mlp(
+            hidden_size, deprel_mlp_size, dropout
         )
         self.arc_attention = BiaffineAttention(
             arc_mlp_size,
             arc_mlp_size,
             1,
         )
-        self.label_attention = BiaffineAttention(
-            label_mlp_size,
-            label_mlp_size,
-            num_labels,
+        self.deprel_attention = BiaffineAttention(
+            deprel_mlp_size,
+            deprel_mlp_size,
+            num_deprels,
         )
         self.loss_func = nn.CrossEntropyLoss(ignore_index=special.PAD_IDX)
 
@@ -152,6 +159,16 @@ class BiaffineParser(nn.Module):
             nn.Dropout(dropout),
         )
 
+    @staticmethod
+    def _shift_heads(heads: torch.Tensor) -> torch.Tensor:
+        """Converts indices to internal representation."""
+        return heads + special.OFFSET
+
+    @staticmethod
+    def _unshift_heads(heads: torch.Tensor) -> torch.Tensor:
+        """Converts internal representation to indices."""
+        return heads - special.OFFSET
+
     def forward(
         self,
         encodings: torch.Tensor,
@@ -164,116 +181,119 @@ class BiaffineParser(nn.Module):
             mask: Attention mask of shape N x L.
 
         Returns:
-            A (arc logits, label logits) tuple.
+            A (arc logits, deprel logits) tuple.
         """
         batch_size = encodings.size(0)
         length = encodings.size(1)
         arc_head = self.arc_head_mlp(encodings)
         arc_dep = self.arc_dep_mlp(encodings)
-        label_head = self.label_head_mlp(encodings)
-        label_dep = self.label_dep_mlp(encodings)
+        deprel_head = self.deprel_head_mlp(encodings)
+        deprel_dep = self.deprel_dep_mlp(encodings)
         # FIXME indices.
         arc_logits = self.arc_attention(arc_head, arc_dep).squeeze(-1)
-        label_logits = self.label_attention(label_head, label_dep)
+        deprel_logits = self.deprel_attention(deprel_head, deprel_dep)
         arc_mask = mask.unsqueeze(1)
         arc_logits.masked_fill_(~arc_mask, defaults.NEG_EPSILON)
         arc_mask = arc_mask.unsqueeze(-1)
-        label_logits.masked_fill_(~arc_mask, defaults.NEG_EPSILON)
+        deprel_logits.masked_fill_(~arc_mask, defaults.NEG_EPSILON)
         assert arc_logits.shape == (
             batch_size,
             length,
             length,
         ), f"Arc logits shape mismatch: {arc_logits.shape}"
-        assert label_logits.shape == (
+        assert deprel_logits.shape == (
             batch_size,
             length,
             length,
-        ), f"Label logits shape mismatch: {label_logits.shape}"
-        return arc_logits, label_logits
+            self.deprel_attention.out_size,
+        ), f"Deprel logits shape mismatch: {deprel_logits.shape}"
+        return arc_logits, deprel_logits
 
     def compute_loss(
         self,
-        gold_heads: torch.Tensor,
         head_logits: torch.Tensor,
-        label_logits: torch.Tensor,
-        gold_labels: torch.Tensor,
+        gold_heads: torch.Tensor,
+        deprel_logits: torch.Tensor,
+        gold_deprels: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Compute head and label cross-entropy losses.
+        """Compute head and deprel cross-entropy losses.
 
-        Following Dozat & Manning, label prediction loss is conditioned on
+        Following Dozat & Manning, deprel prediction loss is conditioned on
         the gold heads.
 
-        Standard practice is to weigh these to combine
-        them, but we keep them separate here to allow for more options.
+        Standard practice is to weigh these to combine them; we return them
+        separately to allow for more possibilities downstream.
 
         Args:
             head_logits: Head scores.
             gold_heads: Gold head indices.
-            label_logits: Label scores.
-            gold_labels: Gold dependency labels.
+            deprel_logits: Label scores.
+            gold_deprels: Gold dependency deprels.
 
         Returns:
-            Losses for head and labels.
+            Losses for head and deprels.
         """
+        gold_heads = self._shift_heads(gold_heads)
         head_loss = self.loss_func(
             head_logits.reshape(-1, head_logits.size(-1)),
             gold_heads.reshape(-1),
         )
-        length = label_logits.size(1)
-        num_labels = label_logits.size(2)
+        length = deprel_logits.size(1)
+        num_deprels = deprel_logits.size(3)
         gold_heads_expanded = (
             gold_heads.unsqueeze(-1)
             .unsqueeze(-1)
-            .expand(-1, length, 1, num_labels)
+            .expand(-1, length, 1, num_deprels)
         )
-        # Selects the appropriate label logits.
-        selected_label_logits = torch.gather(
-            label_logits,
+        # Selects the appropriate deprel logits.
+        selected_deprel_logits = torch.gather(
+            deprel_logits,
             dim=2,
             index=gold_heads_expanded,
         ).squeeze(2)
         # TODO: consider having the caller pass in the
         # loss function object instead.
-        label_loss = self.loss_func(
-            selected_label_logits.reshape(-1, num_labels),
-            gold_labels.reshape(-1),
+        deprel_loss = self.loss_func(
+            selected_deprel_logits.reshape(-1, num_deprels),
+            gold_deprels.reshape(-1),
         )
-        return head_loss, label_loss
+        return head_loss, deprel_loss
 
     def decode(
         self,
         head_logits: torch.Tensor,
-        label_logits: torch.Tensor,
+        deprel_logits: torch.Tensor,
         mask: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Decode head and label predictions from logits.
+        """Decode head and deprel predictions from logits.
 
         This uses greedy decoding.
 
         Args:
             head_logits: Head scores of shape N x L x L.
-            label_logits: Label scores of shape N x L x L x C
+            deprel_logits: Label scores of shape N x L x L x C
             mask: Attention mask of shape N x L.
 
         Returns:
             pred_heads: Predicted head indices of shape N x L.
-            pred_labels: Predicted labels of shape N x L.
+            pred_deprels: Predicted deprels of shape N x L.
         """
         # FIXME indices.
         pred_heads = head_logits.argmax(dim=-1)
         pred_heads.masked_fill_(~mask, special.PAD_IDX)
-        batch_size = label_logits.size(0)
-        length = label_logits.size(1)
-        num_labels = label_logits.size(3)
+        batch_size = deprel_logits.size(0)
+        length = deprel_logits.size(1)
+        num_deprels = deprel_logits.size(3)
         pred_heads_expanded = (
             pred_heads.unsqueeze(-1)
             .unsqueeze(-1)
-            .expand(batch_size, length, 1, num_labels)
+            .expand(batch_size, length, 1, num_deprels)
         )
-        selected_label_logits = torch.gather(
-            label_logits, dim=2, index=pred_heads_expanded
+        selected_deprel_logits = torch.gather(
+            deprel_logits, dim=2, index=pred_heads_expanded
         )
         # FIXME indices.
-        pred_labels = selected_label_logits.squeeze(2).argmax(dim=-1)
-        pred_labels.masked_fill_(~mask, special.PAD_IDX)
-        return pred_heads, pred_labels
+        pred_deprels = selected_deprel_logits.squeeze(2).argmax(dim=-1)
+        pred_heads = self._unshift_heads(pred_heads)
+        pred_deprels.masked_fill_(~mask, special.PAD_IDX)
+        return pred_heads, pred_deprels

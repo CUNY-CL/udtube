@@ -15,12 +15,12 @@ class Batch(nn.Module):
     Args:
         tokenlists: list of TokenLists.
         tokens: batch encoding from the transformer.
-        pos: optional padded tensor of universal POS labels.
-        xpos: optional padded tensor of language-specific POS labels.
-        lemma: optional padded tensor of lemma labels.
-        feats: optional padded tensor of morphological feature labels.
+        pos: optional padded tensor of universal POS deprels.
+        xpos: optional padded tensor of language-specific POS deprels.
+        lemma: optional padded tensor of lemma deprels.
+        feats: optional padded tensor of morphological feature deprels.
         head: optional padded tensor of dependency parser head indices.
-        label: optional padded tensor of dependency parser arc labels.
+        deprel: optional padded tensor of dependency parser arc deprels.
     """
 
     tokenlists: List[conllu.TokenList]
@@ -32,7 +32,7 @@ class Batch(nn.Module):
     lemma: Optional[torch.Tensor]
     feats: Optional[torch.Tensor]
     head: Optional[torch.Tensor]
-    label: Optional[torch.Tensor]
+    deprel: Optional[torch.Tensor]
 
     def __init__(
         self,
@@ -45,7 +45,7 @@ class Batch(nn.Module):
         lemma=None,
         feats=None,
         head=None,
-        label=None,
+        deprel=None,
     ):
         super().__init__()
         self.tokenlists = tokenlists
@@ -57,7 +57,7 @@ class Batch(nn.Module):
         self.register_buffer("lemma", lemma)
         self.register_buffer("feats", feats)
         self.register_buffer("head", head)
-        self.register_buffer("label", label)
+        self.register_buffer("deprel", deprel)
 
     @property
     def use_upos(self) -> bool:
@@ -76,12 +76,8 @@ class Batch(nn.Module):
         return self.feats is not None
 
     @property
-    def use_head(self) -> bool:
-        return self.head is not None
-
-    @property
-    def use_label(self) -> bool:
-        return self.label is not None
+    def use_prase(self) -> bool:
+        return self.head is not None and self.deprel is not None
 
     def __len__(self) -> int:
         return len(self.tokenlists)

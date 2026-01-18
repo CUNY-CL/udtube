@@ -62,28 +62,27 @@ UDTube can perform up to four morphological tasks simultaneously:
 
 - Lemmatization is performed using the `LEMMA` field and [edit
   scripts](https://aclanthology.org/P14-2111/).
-
 - [Universal part-of-speech
   tagging](https://universaldependencies.org/u/pos/index.html) is performed
   using the `UPOS` field: enable with `data: use_upos: true`.
-
 - Language-specific part-of-speech tagging is performed using the `XPOS` field:
   enable with `data: use_xpos: true`.
-
 - Morphological feature tagging is performed using the `FEATS` field: enable
   with `data: use_feats: true`.
+- Dependency parsing is performed using the `HEAD` and `DEPREL` fields (the
+  `DEPS` field is also filled in as a courtesy): enable with
+  `data: use_parse: true`.
 
 The following caveats apply:
 
 - Note that many newer Universal Dependencies datasets do not have
-  language-specific part-of-speech-tags.
+  language-specific part-of-speech-tags so this task should be disabled
+  (`data: use_xpos: false`).
 - The `FEATS` field is treated as a single unit and is not segmented in any way.
 - One can convert from [Universal Dependencies morphological
   features](https://universaldependencies.org/u/feat/index.html) to [UniMorph
   features](https://unimorph.github.io/schema/) using
   [`scripts/convert_to_um.py`](scripts/convert_to_um.py).
-- UDTube does not perform dependency parsing at present, so the `HEAD`,
-  `DEPREL`, and `DEPS` fields are ignored and should be specified as `_`.
 
 ## Usage
 

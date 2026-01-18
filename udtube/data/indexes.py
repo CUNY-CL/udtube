@@ -10,7 +10,8 @@ we could share a vocabulary or an embedding across classifier layers.
 
 Because of this, we also have the Index class, which holds instances of
 the lower-level vocabularies, one for each enabled classifier head, and which
-handles (de)serialization."""
+handles (de)serialization.
+"""
 
 from __future__ import annotations
 
@@ -72,8 +73,8 @@ class Index:
         xpos: optional vocabulary for language-specific POS tagging.
         lemma: optional vocabulary for lemmatization.
         feats: optional vocabulary for morphological tagging.
-        label: optional vocabulary for dependency parsing
-            arc labels.
+        deprel: optional vocabulary for dependency parsing dependency
+            relations.
     """
 
     reverse_edits: bool = defaults.REVERSE_EDITS
@@ -81,7 +82,7 @@ class Index:
     xpos: Optional[Vocabulary] = None
     lemma: Optional[Vocabulary] = None
     feats: Optional[Vocabulary] = None
-    label: Optional[Vocabulary] = None
+    deprel: Optional[Vocabulary] = None
 
     # Serialization.
 

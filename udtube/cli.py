@@ -52,8 +52,8 @@ class UDTubeCLI(cli.LightningCLI):
             apply_on="instantiate",
         )
         parser.link_arguments(
-            "data.label_tagset_size",
-            "model.label_out_size",
+            "data.deprel_tagset_size",
+            "model.deprel_out_size",
             apply_on="instantiate",
         )
 

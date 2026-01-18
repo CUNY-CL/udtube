@@ -16,7 +16,7 @@ class Logits(nn.Module):
     lemma: Optional[torch.Tensor]
     feats: Optional[torch.Tensor]
     head: Optional[torch.Tensor]
-    label: Optional[torch.Tensor]
+    deprel: Optional[torch.Tensor]
 
     def __init__(
         self,
@@ -25,7 +25,7 @@ class Logits(nn.Module):
         lemma=None,
         feats=None,
         head=None,
-        label=None,
+        deprel=None,
     ):
         super().__init__()
         self.register_buffer("upos", upos)
@@ -33,7 +33,7 @@ class Logits(nn.Module):
         self.register_buffer("lemma", lemma)
         self.register_buffer("feats", feats)
         self.register_buffer("head", head)
-        self.register_buffer("label", label)
+        self.register_buffer("deprel", deprel)
 
     @property
     def use_upos(self) -> bool:
@@ -52,9 +52,5 @@ class Logits(nn.Module):
         return self.feats is not None
 
     @property
-    def use_head(self) -> bool:
-        return self.head is not None
-
-    @property
-    def use_label(self) -> bool:
-        return self.label is not None
+    def use_parse(self) -> bool:
+        return self.head is not None and self.deprel is not None
