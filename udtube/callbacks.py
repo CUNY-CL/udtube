@@ -2,7 +2,7 @@
 
 import logging
 import sys
-from typing import Iterator, Optional, Sequence, TextIO
+from typing import Iterator, Optional, Sequence, TextIO, Tuple
 
 import lightning
 from lightning.pytorch import callbacks, trainer
@@ -36,7 +36,9 @@ class PredictionWriter(callbacks.BasePredictionWriter):
     # Required API.
 
     def on_predict_start(
-        self, trainer: trainer.Trainer, pl_module: lightning.LightningModule
+        self,
+        trainer: trainer.Trainer,
+        pl_module: lightning.LightningModule,
     ) -> None:
         # Placing this here prevents the creation of an empty file in the case
         # where a prediction callback was specified but UDTube is not running
@@ -48,12 +50,13 @@ class PredictionWriter(callbacks.BasePredictionWriter):
         self,
         trainer: trainer.Trainer,
         model: models.UDTube,
-        logits: data.Logits,
+        logits_mask: Tuple[data.Logits, torch.Tensor],
         batch_indices: Optional[Sequence[int]],
         batch: data.Batch,
         batch_idx: int,
         dataloader_idx: int,
     ) -> None:
+        logits, mask = logits_mask
         mapper = data.Mapper(trainer.datamodule.index)
         # Batch-level argmax on the classification heads.
         upos_hat = (
@@ -67,6 +70,9 @@ class PredictionWriter(callbacks.BasePredictionWriter):
         )
         feats_hat = (
             torch.argmax(logits.feats, dim=1) if logits.use_feats else None
+        )
+        head_hat, deprel_hat = model.classifier.parse_head.decode(
+            logits.head, logits.deprel, mask
         )
         for i, tokenlist in enumerate(batch.tokenlists):
             # Sentence-level decoding of the classification indices, followed
@@ -85,19 +91,25 @@ class PredictionWriter(callbacks.BasePredictionWriter):
             if feats_hat is not None:
                 feats_it = mapper.decode_feats(feats_hat[i, :])
                 self._fill_in_tags(tokenlist, "feats", feats_it)
+            if head_hat is not None and deprel_hat is not None:
+                head_it = mapper.decode_head(head_hat[i, :])
+                deprel_it = mapper.decode_deprel(deprel_hat[i, :])
+                self._fill_in_parse(tokenlist, head_it, deprel_it)
             print(tokenlist, file=self.sink)
         self.sink.flush()
 
     @staticmethod
     def _fill_in_tags(
-        tokenlist: data.conllu.TokenList, attr: str, tags: Iterator[str]
+        tokenlist: data.conllu.TokenList,
+        attr: str,
+        tags: Iterator[str],
     ) -> None:
         """Helper method for copying tags into tokenlist.
 
         Args:
-            tokenlist (data.conllu.TokenList): tokenlist to insert into.
-            attr (str): attribute on tokens where the tags should be inserted.
-            tags (Iterator[str]): tags to insert.
+            tokenlist: tokenlist to insert into.
+            attr: attribute on tokens where the tags should be inserted.
+            tags: iterator over tags to insert.
         """
         # Note that when MWEs are present, the iterators with predicted tags
         # from the classifier heads are shorter than the tokenlists, so we
@@ -110,13 +122,46 @@ class PredictionWriter(callbacks.BasePredictionWriter):
             except StopIteration:
                 # Prevents the error from being caught by Lightning.
                 logging.error(
-                    f"Length mismatch at tag {attr!r} (sent_id: "
+                    f"Length mismatch at token {token!r} (sent_id: "
+                    f"{tokenlist.metadata.get('sent_id')})"
+                )
+                continue
+
+    @staticmethod
+    def _fill_in_parse(
+        tokenlist: data.conllu.TokenList,
+        head: Iterator[str],
+        deprel: Iterator[str],
+    ) -> None:
+        """Helper method for copying parser data into tokenlist.
+
+        Args:
+            tokenlist: tokenlist to insert into.
+            head: iterator over heads.
+            deprel: iterator over dependency relations.
+        """
+        # Note that when MWEs are present, the iterators with predicted tags
+        # from the classifier heads are shorter than the tokenlists, so we
+        # `continue` without advancing said iterators.
+        for token in tokenlist:
+            if token.is_mwe:
+                continue
+            try:
+                token.head = next(head)
+                token.deprel = next(deprel)
+                token.deps = f"{token.head}:{token.deprel}"
+            except StopIteration:
+                # Prevents the error from being caught by Lightning.
+                logging.error(
+                    f"Length mismatch at token {token!r} (sent_id: "
                     f"{tokenlist.metadata.get('sent_id')})"
                 )
                 continue
 
     def on_predict_end(
-        self, trainer: trainer.Trainer, pl_module: lightning.LightningModule
+        self,
+        trainer: trainer.Trainer,
+        pl_module: lightning.LightningModule,
     ) -> None:
         if self.sink is not sys.stdout:
             self.sink.close()

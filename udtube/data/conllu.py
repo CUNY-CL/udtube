@@ -9,7 +9,15 @@ import collections
 import dataclasses
 import re
 
-from typing import Dict, Iterable, Iterator, List, Optional, TextIO, Tuple
+from typing import (
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    TextIO,
+    Tuple,
+)
 from .. import special
 
 
@@ -125,9 +133,18 @@ class Token:
 
     @classmethod
     def parse_from_string(cls, string: str) -> Token:
-        id_, form, lemma, upos, xpos, feats, head, deprel, deps, misc = (
-            string.split("\t")
-        )
+        (
+            id_,
+            form,
+            lemma,
+            upos,
+            xpos,
+            feats,
+            head,
+            deprel,
+            deps,
+            misc,
+        ) = string.split("\t")
         return cls(
             ID.parse_from_string(id_),
             form,

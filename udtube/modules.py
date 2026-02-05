@@ -5,7 +5,7 @@ for a classification head, and L is the maximum length (in subwords, tokens,
 or tags) of a sentence in the batch.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import lightning
 import tokenizers
@@ -13,7 +13,7 @@ import torch
 from torch import nn
 import transformers
 
-from . import data, defaults, encoders
+from . import data, defaults, encoders, parser
 
 
 class Error(Exception):
@@ -55,7 +55,7 @@ class UDTubeEncoder(lightning.LightningModule):
     def forward(
         self,
         batch: data.Batch,
-    ) -> torch.Tensor:
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Computes the contextual word-level encoding.
 
         This discards over-long sequences (if necessary), computes the subword
@@ -66,7 +66,7 @@ class UDTubeEncoder(lightning.LightningModule):
             batch: a data batch.
 
         Returns:
-            A contextual word-level encoding.
+            A contextual word-level encoding and a matching mask.
         """
         # We move these manually.
         x = self.encoder(
@@ -75,14 +75,11 @@ class UDTubeEncoder(lightning.LightningModule):
         ).hidden_states
         # Stacks the pooling layers.
         x = torch.stack(x[-self.pooling_layers :])
-        # Averages them into one embedding layer; automatically squeezes the
-        # mean dimension.
+        # Averages them into one embedding layer, squeezing the mean dimension.
         x = torch.mean(x, dim=0)
-        # Applies dropout.
         x = self.dropout_layer(x)
         # Maps from subword embeddings to word-level embeddings.
-        x = self._group_embeddings(x, batch.encodings)
-        return x
+        return self._group_embeddings(x, batch.encodings)
 
     def _group_embeddings(
         self,
@@ -100,15 +97,16 @@ class UDTubeEncoder(lightning.LightningModule):
             encodings: the tokenizer encodings.
 
         Returns:
-            The re-pooled embeddings tensor.
+            The re-pooled word embeddings tensor and a matching word-level
+                boolean mask.
         """
         new_sentence_embeddings = []
+        lengths = []
         for sentence_encodings, sentence_embeddings in zip(
             encodings, embeddings
         ):
-            # This looks like an overly elaborate loop that could be a list
-            # comprehension, but this is much faster.
             indices = []
+            num_words = 0
             i = 0
             while i < len(sentence_encodings.word_ids):
                 word_id = sentence_encodings.word_ids[i]
@@ -117,6 +115,7 @@ class UDTubeEncoder(lightning.LightningModule):
                     break
                 pair = sentence_encodings.word_to_tokens(word_id)
                 indices.append(pair)
+                num_words += 1
                 # Fast-forwards to the start of the next word.
                 i = pair[-1]
             # For each span of subwords, combine via mean and then stack them.
@@ -128,6 +127,7 @@ class UDTubeEncoder(lightning.LightningModule):
                     ]
                 )
             )
+            lengths.append(num_words)
         # Pads and stacks across sentences; the leading dimension is ragged
         # but `pad` cowardly refuses to pad non-trailing dimensions, so we
         # abuse transposition.
@@ -135,7 +135,7 @@ class UDTubeEncoder(lightning.LightningModule):
             len(sentence_embedding)
             for sentence_embedding in new_sentence_embeddings
         )
-        return torch.stack(
+        encoding = torch.stack(
             [
                 nn.functional.pad(
                     sentence_embedding.T,
@@ -145,6 +145,16 @@ class UDTubeEncoder(lightning.LightningModule):
                 for sentence_embedding in new_sentence_embeddings
             ]
         ).transpose(1, 2)
+        # Makes word-level mask.
+        mask = torch.zeros(
+            len(encodings),
+            pad_max,
+            device=self.device,
+            dtype=bool,
+        )
+        for i, length in enumerate(lengths):
+            mask[i, :length] = True
+        return encoding, mask
 
 
 class UDTubeClassifier(lightning.LightningModule):
@@ -156,35 +166,41 @@ class UDTubeClassifier(lightning.LightningModule):
         use_xpos: enables the language-specific POS tagging task.
         use_lemma: enables the lemmatization task.
         use_feats: enables the morphological feature tagging task.
+        use_parse: enables the dependenchy parsing task.
         upos_out_size: number of UPOS classes; usually set automatically.
         xpos_out_size: number of XPOS classes; usually set automatically.
         lemma_out_size: number of LEMMA classes; usually set automatically.
         feats_out_size: number of FEATS classes; usually set automatically.
     """
 
-    upos_head: Optional[nn.Sequential]
-    xpos_head: Optional[nn.Sequential]
-    lemma_head: Optional[nn.Sequential]
-    feats_head: Optional[nn.Sequential]
+    upos_head: Optional[nn.Linear]
+    xpos_head: Optional[nn.Linear]
+    lemma_head: Optional[nn.Linear]
+    feats_head: Optional[nn.Linear]
+    parse_head: Optional[parser.BiaffineParser]
 
     def __init__(
         self,
         hidden_size: int,
+        *,
         use_upos: bool = defaults.USE_UPOS,
         use_xpos: bool = defaults.USE_XPOS,
         use_lemma: bool = defaults.USE_LEMMA,
         use_feats: bool = defaults.USE_FEATS,
-        *,
+        use_parse: bool = defaults.USE_PARSE,
+        # Specific to the parser.
+        dropout: float = defaults.DROPOUT,
+        arc_mlp_size: int = defaults.ARC_MLP_SIZE,
+        deprel_mlp_size: int = defaults.DEPREL_MLP_SIZE,
         # `2` is a dummy value here; it will be set by the dataset object.
         upos_out_size: int = 2,
         xpos_out_size: int = 2,
         lemma_out_size: int = 2,
         feats_out_size: int = 2,
-        # Optimization and LR scheduling.
-        **kwargs,
+        deprel_out_size: int = 2,
     ):
         super().__init__()
-        if not any([use_upos, use_xpos, use_lemma, use_feats]):
+        if not any([use_upos, use_xpos, use_lemma, use_feats, use_parse]):
             raise Error("No classification heads enabled")
         self.upos_head = (
             nn.Linear(hidden_size, upos_out_size) if use_upos else None
@@ -197,6 +213,17 @@ class UDTubeClassifier(lightning.LightningModule):
         )
         self.feats_head = (
             nn.Linear(hidden_size, feats_out_size) if use_feats else None
+        )
+        self.parse_head = (
+            parser.BiaffineParser(
+                hidden_size,
+                arc_mlp_size,
+                deprel_mlp_size,
+                deprel_out_size,
+                dropout,
+            )
+            if use_parse
+            else None
         )
 
     # Properties.
@@ -217,9 +244,15 @@ class UDTubeClassifier(lightning.LightningModule):
     def use_feats(self) -> bool:
         return self.feats_head is not None
 
+    @property
+    def use_parse(self) -> bool:
+        return self.parse_head is not None
+
     # Forward pass.
 
-    def forward(self, encodings: torch.Tensor) -> data.Logits:
+    def forward(
+        self, encodings: torch.Tensor, mask: torch.Tensor
+    ) -> data.Logits:
         """Computes logits for each of the classification heads.
 
         This takes the contextual word encodings and then computes the logits
@@ -228,30 +261,27 @@ class UDTubeClassifier(lightning.LightningModule):
         transpose to produce this shape.
 
         Args:
-            encodings: the contextual word
+            encodings: word-level encoding tensor.
+            mask: word-level mask.
 
         Returns:
-            A contextual word-level encoding.
+            Logit tensors for all the active tasks.
         """
+        if self.use_upos:
+            upos = self.upos_head(encodings).transpose(1, 2)
+        if self.use_xpos:
+            xpos = self.xpos_head(encodings).transpose(1, 2)
+        if self.use_lemma:
+            lemma = self.lemma_head(encodings).transpose(1, 2)
+        if self.use_feats:
+            feats = self.feats_head(encodings).transpose(1, 2)
+        if self.use_parse:
+            head, deprel = self.parse_head(encodings, mask)
         return data.Logits(
-            upos=(
-                self.upos_head(encodings).transpose(1, 2)
-                if self.use_upos
-                else None
-            ),
-            xpos=(
-                self.xpos_head(encodings).transpose(1, 2)
-                if self.use_xpos
-                else None
-            ),
-            lemma=(
-                self.lemma_head(encodings).transpose(1, 2)
-                if self.use_lemma
-                else None
-            ),
-            feats=(
-                self.feats_head(encodings).transpose(1, 2)
-                if self.use_feats
-                else None
-            ),
+            upos=upos if self.use_upos else None,
+            xpos=xpos if self.use_xpos else None,
+            lemma=lemma if self.use_lemma else None,
+            feats=feats if self.use_feats else None,
+            head=head if self.use_parse else None,
+            deprel=deprel if self.use_parse else None,
         )
