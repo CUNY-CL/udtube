@@ -161,7 +161,13 @@ class MappableDataset(AbstractTaggedDataset, data.Dataset):
 
     This is implemented with a memory map after making a single pass through
     the file to compute offsets.
+
+    Args:
+        sequential (bool, optional): will this data set by used for repeated
+            linear access, as is the case for validation data?
     """
+
+    sequential: bool = False
 
     _offsets: List[int] = dataclasses.field(default_factory=list, init=False)
     _mmap: Optional[mmap.mmap] = dataclasses.field(default=None, init=False)
@@ -185,9 +191,25 @@ class MappableDataset(AbstractTaggedDataset, data.Dataset):
         # Makes this safe for use with multiple workers.
         if self._mmap is None:
             self._fobj = open(self.path, "rb")
-            self._mmap = mmap.mmap(
-                self._fobj.fileno(), 0, access=mmap.ACCESS_READ
-            )
+            if hasattr(mmap, "MAP_POPULATE"):  # Linux-specific.
+                flags = mmap.MAP_SHARED
+                if not self.sequential:
+                    flags |= mmap.MAP_POPULATE
+                self._mmap = mmap.mmap(
+                    self._fobj.fileno(),
+                    0,
+                    flags=flags,
+                    prot=mmap.PROT_READ,
+                )
+                if self.sequential:
+                    self._mmap.madvise(mmap.MADV_WILLNEED)
+                    self._mmap.madvise(mmap.MADV_SEQUENTIAL)
+                else:
+                    self._mmap.madvise(mmap.MADV_RANDOM)
+            else:
+                self._mmap = mmap.mmap(
+                    self._fobj.fileno(), 0, access=mmap.ACCESS_READ
+                )
         return self._mmap
 
     def __getitem__(self, idx: int) -> Item:

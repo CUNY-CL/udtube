@@ -234,6 +234,7 @@ class DataModule(lightning.LightningDataModule):
                 self.use_lemma,
                 self.use_feats,
                 self.use_parse,
+                sequential=True,
             ),
             collate_fn=self.collator,
             batch_size=self.batch_size,
