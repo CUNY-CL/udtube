@@ -1,7 +1,8 @@
 """Data modules."""
 
+import logging
 import os
-from typing import Optional
+from typing import Iterable, Optional
 
 import lightning
 import transformers
@@ -88,6 +89,7 @@ class DataModule(lightning.LightningDataModule):
             if self.train
             else indexes.Index.read(model_dir)
         )
+        self.log_vocabularies()
         self.collator = collators.Collator(
             transformers.AutoTokenizer.from_pretrained(
                 encoder,
@@ -98,36 +100,17 @@ class DataModule(lightning.LightningDataModule):
             )
         )
 
-    # Based on: https://universaldependencies.org/u/pos/index.html.
-
-    UPOS_VOCABULARY = [
-        "ADJ",
-        "ADP",
-        "ADV",
-        "AUX",
-        "CCONJ",
-        "DET",
-        "INTJ",
-        "NOUN",
-        "NUM",
-        "PART",
-        "PRON",
-        "PROPN",
-        "PUNCT",
-        "SCONJ",
-        "SYM",
-        "VERB",
-        "X",
-    ]
-
     def _make_index(self, model_dir: str) -> indexes.Index:
+        # This is technically fixed to the universal tagset but we don't
+        # enforce that here.
+        upos_vocabulary = set() if self.use_upos else None
         xpos_vocabulary = set() if self.use_xpos else None
         lemma_vocabulary = set() if self.use_lemma else None
         feats_vocabulary = set() if self.use_feats else None
         lemma_mapper = mappers.LemmaMapper(self.reverse_edits)
         for tokenlist in conllu.parse_from_path(self.train):
-            # We don't need to collect the upos vocabulary because "u"
-            # stands for "universal" here.
+            if self.use_upos:
+                upos_vocabulary.update(token.upos for token in tokenlist)
             if self.use_xpos:
                 xpos_vocabulary.update(token.xpos for token in tokenlist)
             if self.use_lemma:
@@ -140,9 +123,7 @@ class DataModule(lightning.LightningDataModule):
         index = indexes.Index(
             reverse_edits=self.reverse_edits,
             upos=(
-                indexes.Vocabulary(self.UPOS_VOCABULARY)
-                if self.use_upos
-                else None
+                indexes.Vocabulary(upos_vocabulary) if self.use_upos else None
             ),
             xpos=(
                 indexes.Vocabulary(xpos_vocabulary) if self.use_xpos else None
@@ -162,6 +143,36 @@ class DataModule(lightning.LightningDataModule):
         os.makedirs(model_dir, exist_ok=True)
         index.write(model_dir)
         return index
+
+    # Logging.
+
+    @staticmethod
+    def pprint(vocabulary: Iterable) -> str:
+        """Prints the vocabulary."""
+        return ", ".join(f"{symbol!r}" for symbol in vocabulary)
+
+    def log_vocabularies(self) -> None:
+        """Logs this module's vocabularies."""
+        if self.use_upos:
+            logging.info(
+                "UPOS vocabulary (%d): %s",
+                self.upos_tagset_size,
+                self.pprint(self.index.upos),
+            )
+        if self.use_xpos:
+            logging.info(
+                "XPOS vocabulary (%d): %s",
+                self.xpos_tagset_size,
+                self.pprint(self.index.xpos),
+            )
+        if self.use_lemma:
+            logging.info(
+                "Lemma vocabulary (%d): [omitted]", self.lemma_tagset_size,
+            )
+        if self.use_feats:
+            logging.info(
+                "Features vocabulary (%d): [omitted]", self.feats_tagset_size,
+            )
 
     # Properties.
 
