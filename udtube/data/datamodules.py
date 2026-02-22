@@ -179,14 +179,23 @@ class DataModule(lightning.LightningDataModule):
             )
         if self.use_lemma:
             logging.info(
+<<<<<<< HEAD
                 "Lemma vocabulary (%d): [omitted; not human-readable]",
+=======
+                "Lemma vocabulary (%d): [omitted]",
+>>>>>>> 069fbcc (Adds logging for vocabularies (#117))
                 self.lemma_tagset_size,
             )
         if self.use_feats:
             logging.info(
+<<<<<<< HEAD
                 "Features vocabulary (%d): %s",
                 self.feats_tagset_size,
                 self.pprint(self.index.feats),
+=======
+                "Features vocabulary (%d): [omitted]",
+                self.feats_tagset_size,
+>>>>>>> 069fbcc (Adds logging for vocabularies (#117))
             )
 
     # Properties.
