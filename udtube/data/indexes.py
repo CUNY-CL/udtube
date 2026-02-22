@@ -35,6 +35,9 @@ class Vocabulary:
     def __len__(self) -> int:
         return len(self._index2symbol)
 
+    def __iter__(self) -> List[str]:
+        return iter(self._index2symbol)
+
     # Lookup.
 
     def __call__(self, lookup: str) -> int:

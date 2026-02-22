@@ -122,6 +122,7 @@ class UDTubeTest(unittest.TestCase):
                         f"--data.test={expected_path}",
                         f"--model.encoder={encoder}",
                         f"--model.use_xpos={use_xpos}",
+                        "--trainer.enable_progress_bar=false",
                     ]
                 )
         expected_path = os.path.join(TESTDATA_DIR, f"{langcode}_expected.test")
