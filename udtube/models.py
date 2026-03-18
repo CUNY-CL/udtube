@@ -7,6 +7,7 @@ from lightning.pytorch import cli
 import torch
 from torch import nn
 from torchmetrics import classification
+import wandb
 
 from . import data, defaults, modules, special
 
@@ -158,6 +159,14 @@ class UDTube(lightning.LightningModule):
         # algorithms.
         if torch.are_deterministic_algorithms_enabled():
             torch.use_deterministic_algorithms(True, warn_only=True)
+        # Informs W&B how I want key metrics summarized.
+        if wandb.run is not None:
+            wandb.define_metric("train_loss", summary="min")
+            wandb.define_metric("val_feats_accuracy", summary="max")
+            wandb.define_metric("val_loss", summary="min")
+            wandb.define_metric("val_lemma_accuracy", summary="max")
+            wandb.define_metric("val_upos_accuracy", summary="max")
+            wandb.define_metric("val_xpos_accuracy", summary="max")
 
     def predict_step(self, batch: data.Batch, batch_idx: int) -> data.Logits:
         return self(batch)
@@ -228,15 +237,16 @@ class UDTube(lightning.LightningModule):
             losses.append(self.loss_func(logits.feats, batch.feats))
             self.feats_accuracy.update(logits.feats, batch.feats)
         loss = torch.sum(torch.stack(losses))
-        self.log(
-            f"{subset}_loss",
-            loss,
-            batch_size=len(batch),
-            on_step=False,
-            on_epoch=True,
-            logger=True,
-            prog_bar=True,
-        )
+        if not self.trainer.sanity_checking:
+            self.log(
+                f"{subset}_loss",
+                loss,
+                batch_size=len(batch),
+                on_step=False,
+                on_epoch=True,
+                logger=True,
+                prog_bar=True,
+            )
         # We can use the returned loss to step the optimizers.
         return loss
 
