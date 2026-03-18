@@ -1,6 +1,6 @@
 [project]
 name = "udtube"
-version = "0.1.10"
+version = "0.1.11"
 description = "Neural morphological analysis"
 license = "Apache-2.0"
 readme = "README.md"
@@ -37,7 +37,7 @@ dependencies = [
     "torch==2.9.1",
     "torchmetrics==1.8.2",
     "wandb>=0.18.0,<1.0.0",
-    "yoyodyne>=0.5.0",
+    "yoyodyne>=0.5.12",
 ]
 [build-system]
 requires = ["setuptools >= 72.1.0", "wheel"]
