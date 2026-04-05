@@ -209,7 +209,7 @@ The following YAML snippet shows the default architectural arguments.
     model:
       dropout: 0.5
       encoder: google-bert/bert-base-multilingual-cased
-      pooling_layers: 4
+      pooling_layers: 1
       reverse_edits: true
       use_upos: true
       use_xpos: true

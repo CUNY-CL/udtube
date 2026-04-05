@@ -1,7 +1,8 @@
 """CoNLL-U file parser.
 
 This is roughly compatible with the third-party package `conllu`, though it
-only has features we care about."""
+only has features we care about.
+"""
 
 from __future__ import annotations
 

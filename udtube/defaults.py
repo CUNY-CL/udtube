@@ -7,7 +7,7 @@ ENCODING = "utf-8"
 
 # Architecture arguments.
 ENCODER = "google-bert/bert-base-multilingual-cased"
-POOLING_LAYERS = 4
+POOLING_LAYERS = 1
 REVERSE_EDITS = True
 USE_UPOS = True
 USE_XPOS = True

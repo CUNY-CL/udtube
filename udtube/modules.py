@@ -69,15 +69,19 @@ class UDTubeEncoder(lightning.LightningModule):
             A contextual word-level encoding.
         """
         # We move these manually.
-        x = self.encoder(
+        output = self.encoder(
             batch.input_ids.to(self.device),
             batch.attention_mask.to(self.device),
-        ).hidden_states
-        # Stacks the pooling layers.
-        x = torch.stack(x[-self.pooling_layers :])
-        # Averages them into one embedding layer; automatically squeezes the
-        # mean dimension.
-        x = torch.mean(x, dim=0)
+            output_hidden_states=self.pooling_layers > 1,
+        )
+        if self.pooling_layers == 1:
+            # Special case for just using the last layer's hidden states.
+            x = output.last_hidden_state
+        else:
+            # Mean-pools the last n layers' hidden states.
+            x = torch.stack(output.hidden_states[-self.pooling_layers :]).mean(
+                dim=0
+            )
         # Applies dropout.
         x = self.dropout_layer(x)
         # Maps from subword embeddings to word-level embeddings.
@@ -138,7 +142,7 @@ class UDTubeEncoder(lightning.LightningModule):
         return torch.stack(
             [
                 nn.functional.pad(
-                    sentence_embedding.T,
+                    sentence_embedding.mT,
                     (0, pad_max - len(sentence_embedding)),
                     value=0,
                 )
