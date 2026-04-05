@@ -10,7 +10,8 @@ we could share a vocabulary or an embedding across classifier layers.
 
 Because of this, we also have the Index class, which holds instances of
 the lower-level vocabularies, one for each enabled classifier head, and which
-handles (de)serialization."""
+handles (de)serialization.
+"""
 
 from __future__ import annotations
 
@@ -28,7 +29,6 @@ class Vocabulary:
     _symbol2index: Dict[str, int]
 
     def __init__(self, vocabulary: Iterable[str]):
-        # TODO: consider storing this in-class for logging purposes.
         self._index2symbol = special.SPECIAL + sorted(vocabulary)
         self._symbol2index = {c: i for i, c in enumerate(self._index2symbol)}
 

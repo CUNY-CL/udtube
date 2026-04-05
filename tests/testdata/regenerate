@@ -20,6 +20,7 @@ en() {
         --data.predict=tests/testdata/en_train.conllu \
         --model.encoder=google-bert/bert-base-cased \
         --model.use_xpos=True \
+        --trainer.enable_progress_bar=False \
         > tests/testdata/en_expected.conllu 
     udtube test \
         --ckpt_path="${MODEL_DIR}/lightning_logs/version_0/checkpoints/last.ckpt" \
@@ -28,6 +29,7 @@ en() {
         --data.test=tests/testdata/en_train.conllu \
         --model.encoder=google-bert/bert-base-cased \
         --model.use_xpos=True \
+        --trainer.enable_progress_bar=False \
         > tests/testdata/en_expected.test
     rm -rf "${MODEL_DIR}"
 }
@@ -48,6 +50,7 @@ ru() {
         --data.predict=tests/testdata/ru_train.conllu \
         --model.encoder=DeepPavlov/rubert-base-cased \
         --model.use_xpos=False \
+        --trainer.enable_progress_bar=False \
         > tests/testdata/ru_expected.conllu 
     udtube test \
         --ckpt_path="${MODEL_DIR}/lightning_logs/version_0/checkpoints/last.ckpt" \
@@ -56,6 +59,7 @@ ru() {
         --data.test=tests/testdata/ru_train.conllu \
         --model.encoder=DeepPavlov/rubert-base-cased \
         --model.use_xpos=False \
+        --trainer.enable_progress_bar=False \
         > tests/testdata/ru_expected.test 
     rm -rf "${MODEL_DIR}"
 }
