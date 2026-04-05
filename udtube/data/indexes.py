@@ -29,7 +29,6 @@ class Vocabulary:
     _symbol2index: Dict[str, int]
 
     def __init__(self, vocabulary: Iterable[str]):
-        # TODO: consider storing this in-class for logging purposes.
         self._index2symbol = special.SPECIAL + sorted(vocabulary)
         self._symbol2index = {c: i for i, c in enumerate(self._index2symbol)}
 
