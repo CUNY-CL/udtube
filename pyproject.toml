@@ -1,6 +1,10 @@
 [project]
 name = "udtube"
+<<<<<<< HEAD
 version = "0.2.0"
+=======
+version = "0.1.12"
+>>>>>>> 032cfa3 (Pooling layer efficiency (#119))
 description = "Neural morphological analysis"
 license = "Apache-2.0"
 readme = "README.md"
