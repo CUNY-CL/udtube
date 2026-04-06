@@ -1,7 +1,7 @@
 """Special symbols."""
 
-PAD = "[PAD]"
-UNK = "[UNK]"
+PAD = "<P>"
+UNK = "<UNK>"
 SPECIAL = [PAD, UNK]
 
 PAD_IDX = 0
