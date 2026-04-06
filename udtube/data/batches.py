@@ -77,7 +77,7 @@ class Batch(nn.Module):
         return self.feats is not None
 
     @property
-    def use_prase(self) -> bool:
+    def use_parse(self) -> bool:
         return self.head is not None and self.deprel is not None
 
     def __len__(self) -> int:
