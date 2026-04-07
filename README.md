@@ -314,3 +314,6 @@ following document, which describes the model:
 Yakubov, D. 2024. [How do we learn what we cannot
 say?](https://academicworks.cuny.edu/gc_etds/5622/) Master's thesis, CUNY
 Graduate Center.
+
+(See also [`udtube.bib`](udtube.bib) for more work used during the development
+of this library.)
