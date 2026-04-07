@@ -22,12 +22,6 @@ trainer:
 model:
   dropout: 0.4
   encoder: distilbert/distilbert-base-cased
-  pooling_layers: 4
-  use_upos: true
-  use_xpos: true
-  use_lemma: true
-  use_feats: true
-  use_parse: true
   encoder_optimizer:
     class_path: torch.optim.Adam
     init_args:

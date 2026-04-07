@@ -157,12 +157,9 @@ class Mapper:
             Decoded symbols.
         """
         for idx in indices:
-            if idx == special.PAD_IDX:
-                # To avoid sequence length mismatches,
-                # _ is yielded for anything classified as a pad.
-                yield special.BLANK
-            else:
-                yield functor(idx)
+            # FIXME(kbg): is this the right thing to do? Do I need a special
+            # case for padding?
+            yield functor(idx)
 
     def decode_upos(self, indices: torch.Tensor) -> Iterator[str]:
         """Decodes an upos tensor.
@@ -223,11 +220,9 @@ class Mapper:
         Returns:
             Decoded head indices.
         """
-        for idx in indices:
-            if idx == special.PAD_IDX:
-                yield special.BLANK
-            else:
-                yield str(idx.item() - special.OFFSET)
+        return self._decode(
+            indices, lambda idx: str(idx.item() - special.OFFSET)
+        )
 
     def decode_deprel(self, indices: torch.Tensor) -> Iterator[str]:
         """Decodes dependency parsing dependency relations.

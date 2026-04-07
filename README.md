@@ -60,21 +60,21 @@ Dependencies project](https://universaldependencies.org/).
 
 UDTube can perform up to four morphological tasks simultaneously:
 
-- Lemmatization is performed using the `LEMMA` field and [edit
-  scripts](https://aclanthology.org/P14-2111/).
+- Lemmatization is performed using the `LEMMA` field and edit scripts.
 - [Universal part-of-speech
   tagging](https://universaldependencies.org/u/pos/index.html) is performed
-  using the `UPOS` field: enable with `data: use_upos: true`.
-- Language-specific part-of-speech tagging is performed using the `XPOS` field:
-  enable with `data: use_xpos: true`.
-- Morphological feature tagging is performed using the `FEATS` field: enable
-  with `data: use_feats: true`.
-- Dependency parsing is performed using the `HEAD` and `DEPREL` fields (the
-  `DEPS` field is also filled in as a courtesy): enable with
-  `data: use_parse: true`.
+  using the `UPOS` field.
+- Language-specific part-of-speech tagging is performed using the `XPOS` field.
+- Morphological feature tagging is performed using the `FEATS` field.
+- Dependency parsing is performed using the `HEAD` and `DEPREL` fields, a deep
+  biaffine parser, and minimum spanning tree decoding.
 
 The following caveats apply:
 
+- By default, lemmatization uses reverse-edit scripts. This is appropriate for
+  predominantly suffixal languages, which are thought to represent the majority
+  of the world's languages. If working with a predominantly prefixal language,
+  disable this with `data: reverse_edits: false`.
 - Note that many newer Universal Dependencies datasets do not have
   language-specific part-of-speech-tags so this task should be disabled
   (`data: use_xpos: false`).
@@ -211,11 +211,6 @@ The following YAML snippet shows the default architectural arguments.
       ...
 
 Batch size is specified using `data: batch_size: ...` and defaults to 32.
-
-By default, lemmatization uses reverse-edit scripts. This is appropriate for
-predominantly suffixal languages, which are thought to represent the majority of
-the world's languages. If working with a predominantly prefixal language,
-disable this with `data: reverse_edits: false`.
 
 There are a number of ways to specify how long a model should train for. For
 example, the following YAML snippet specifies that training should run for 100

@@ -168,15 +168,15 @@ class UDTubeClassifier(lightning.LightningModule):
 
     Args:
         hidden_size: size of the encoder hidden layer.
+        upos_out_size: number of UPOS classes; usually set automatically.
+        xpos_out_size: number of XPOS classes; usually set automatically.
+        lemma_out_size: number of LEMMA classes; usually set automatically.
+        feats_out_size: number of FEATS classes; usually set automatically.
         use_upos: enables the universal POS tagging task.
         use_xpos: enables the language-specific POS tagging task.
         use_lemma: enables the lemmatization task.
         use_feats: enables the morphological feature tagging task.
         use_parse: enables the dependenchy parsing task.
-        upos_out_size: number of UPOS classes; usually set automatically.
-        xpos_out_size: number of XPOS classes; usually set automatically.
-        lemma_out_size: number of LEMMA classes; usually set automatically.
-        feats_out_size: number of FEATS classes; usually set automatically.
     """
 
     upos_head: Optional[nn.Linear]
@@ -189,12 +189,6 @@ class UDTubeClassifier(lightning.LightningModule):
         self,
         hidden_size: int,
         *,
-        use_upos: bool = defaults.USE_UPOS,
-        use_xpos: bool = defaults.USE_XPOS,
-        use_lemma: bool = defaults.USE_LEMMA,
-        use_feats: bool = defaults.USE_FEATS,
-        use_parse: bool = defaults.USE_PARSE,
-        # Specific to the parser.
         dropout: float = defaults.DROPOUT,
         arc_mlp_size: int = defaults.ARC_MLP_SIZE,
         deprel_mlp_size: int = defaults.DEPREL_MLP_SIZE,
@@ -204,6 +198,11 @@ class UDTubeClassifier(lightning.LightningModule):
         lemma_out_size: int = 2,
         feats_out_size: int = 2,
         deprel_out_size: int = 2,
+        use_upos: bool = defaults.USE_UPOS,
+        use_xpos: bool = defaults.USE_XPOS,
+        use_lemma: bool = defaults.USE_LEMMA,
+        use_feats: bool = defaults.USE_FEATS,
+        use_parse: bool = defaults.USE_PARSE,
     ):
         super().__init__()
         if not any([use_upos, use_xpos, use_lemma, use_feats, use_parse]):

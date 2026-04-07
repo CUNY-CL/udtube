@@ -23,13 +23,13 @@ class UDTube(lightning.LightningModule):
         dropout: Dropout probability.
         encoder: Name of the Hugging Face model used to tokenize and encode.
         pooling_layers: Number of layers to use to compute the embedding.
+        arc_mlp_size: Size of the arc MLP for dependency parsing.
+        deprel_mlp_size: Size of the deprel MLP for dependency parsing.
         use_upos: Enables the universal POS tagging task.
         use_xpos: Enables the language-specific POS tagging task.
         use_lemma: Enables the lemmatization task.
         use_feats: Enables the morphological feature tagging task.
         use_parse: Enables the dependenchy parsing task.
-        arc_mlp_size: Size of the arc MLP for dependency parsing.
-        deprel_mlp_size: Size of the deprel MLP for dependency parsing.
     """
 
     encoder: modules.UDTubeEncoder
@@ -49,16 +49,14 @@ class UDTube(lightning.LightningModule):
         dropout: float = defaults.DROPOUT,
         encoder: str = defaults.ENCODER,
         pooling_layers: int = defaults.POOLING_LAYERS,
+        arc_mlp_size: int = defaults.ARC_MLP_SIZE,
+        deprel_mlp_size: int = defaults.DEPREL_MLP_SIZE,
         use_upos: bool = defaults.USE_UPOS,
         use_xpos: bool = defaults.USE_XPOS,
         use_lemma: bool = defaults.USE_LEMMA,
         use_feats: bool = defaults.USE_FEATS,
         use_parse: bool = defaults.USE_PARSE,
-        # Specific to the parser.
-        arc_mlp_size: int = defaults.ARC_MLP_SIZE,
-        deprel_mlp_size: int = defaults.DEPREL_MLP_SIZE,
         # Optimization.
-        *,
         encoder_optimizer: cli.OptimizerCallable = defaults.OPTIMIZER,
         encoder_scheduler: cli.LRSchedulerCallable = defaults.SCHEDULER,
         classifier_optimizer: cli.OptimizerCallable = defaults.OPTIMIZER,
@@ -77,11 +75,6 @@ class UDTube(lightning.LightningModule):
         self.encoder = modules.UDTubeEncoder(dropout, encoder, pooling_layers)
         self.classifier = modules.UDTubeClassifier(
             self.encoder.hidden_size,
-            use_upos=use_upos,
-            use_xpos=use_xpos,
-            use_lemma=use_lemma,
-            use_feats=use_feats,
-            use_parse=use_parse,
             dropout=dropout,
             arc_mlp_size=arc_mlp_size,
             deprel_mlp_size=deprel_mlp_size,
@@ -92,6 +85,11 @@ class UDTube(lightning.LightningModule):
             arc_mlp_size=arc_mlp_size,
             deprel_mlp_size=deprel_mlp_size,
             deprel_out_size=deprel_out_size,
+            use_upos=use_upos,
+            use_xpos=use_xpos,
+            use_lemma=use_lemma,
+            use_feats=use_feats,
+            use_parse=use_parse,
         )
         self.loss_func = nn.CrossEntropyLoss(ignore_index=special.PAD_IDX)
         self.upos_accuracy = (
@@ -272,7 +270,7 @@ class UDTube(lightning.LightningModule):
                 batch.deprel,
             )
             # TODO(kbg): maybe something more sophisticated or general is
-            # required here; test later.
+            # called for here; test later.
             losses.append(head_loss)
             losses.append(deprel_loss)
         loss = torch.sum(torch.stack(losses))

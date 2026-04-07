@@ -149,7 +149,6 @@ class PredictionWriter(callbacks.BasePredictionWriter):
             try:
                 token.head = next(head)
                 token.deprel = next(deprel)
-                token.deps = f"{token.head}:{token.deprel}"
             except StopIteration:
                 # Prevents the error from being caught by Lightning.
                 logging.error(

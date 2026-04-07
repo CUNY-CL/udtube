@@ -14,7 +14,7 @@ from . import conllu, mappers
 
 
 class Item(nn.Module):
-    """Tensors representing a single depreled sentence."""
+    """Tensors representing a single labeled sentence."""
 
     tokenlist: conllu.TokenList
     upos: Optional[torch.Tensor]
