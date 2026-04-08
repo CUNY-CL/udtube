@@ -75,6 +75,8 @@ class Index:
         xpos: optional vocabulary for language-specific POS tagging.
         lemma: optional vocabulary for lemmatization.
         feats: optional vocabulary for morphological tagging.
+        deprel: optional vocabulary for dependency parsing dependency
+            relations.
     """
 
     reverse_edits: bool = defaults.REVERSE_EDITS
@@ -82,6 +84,7 @@ class Index:
     xpos: Optional[Vocabulary] = None
     lemma: Optional[Vocabulary] = None
     feats: Optional[Vocabulary] = None
+    deprel: Optional[Vocabulary] = None
 
     # Serialization.
 

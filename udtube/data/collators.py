@@ -93,6 +93,16 @@ class Collator:
                 if itemlist[0].use_feats
                 else None
             ),
+            head=(
+                self.pad_tensors([item.head for item in itemlist])
+                if itemlist[0].use_parse
+                else None
+            ),
+            deprel=(
+                self.pad_tensors([item.deprel for item in itemlist])
+                if itemlist[0].use_parse
+                else None
+            ),
         )
 
     @staticmethod
@@ -126,7 +136,9 @@ class Collator:
         return torch.stack(
             [
                 nn.functional.pad(
-                    tensor, (0, pad_max - len(tensor)), value=special.PAD_IDX
+                    tensor,
+                    (0, pad_max - len(tensor)),
+                    value=special.PAD_IDX,
                 )
                 for tensor in tensorlist
             ]

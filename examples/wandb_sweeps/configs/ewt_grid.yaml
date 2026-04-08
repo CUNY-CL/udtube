@@ -1,4 +1,4 @@
-method: random
+method: bayes
 metric:
   name: val_loss
   goal: minimize
@@ -10,6 +10,7 @@ parameters:
     min: 0
     max: 0.5
   model.encoder:
+    distribution: categorical
     values:
       - FacebookAI/roberta-base
       - distilbert/distilbert-base-cased
@@ -18,7 +19,7 @@ parameters:
     distribution: q_uniform
     q: 1
     min: 1
-    max: 8
+    max: 4
   model.encoder_optimizer.class_path:
     value: torch.optim.Adam
   model.encoder_optimizer.init_args.lr:
@@ -31,7 +32,7 @@ parameters:
     distribution: q_uniform
     q: 1
     min: 1
-    max: 20
+    max: 40
   model.classifier_optimizer.class_path:
     value: torch.optim.Adam
   model.classifier_optimizer.init_args.lr:
@@ -49,6 +50,7 @@ parameters:
   model.classifier_scheduler.init_args.patience:
     value: 5
   data.batch_size:
+    distribution: categorical
     values:
       - 8
       - 16

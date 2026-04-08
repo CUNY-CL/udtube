@@ -21,9 +21,18 @@ class Item(nn.Module):
     xpos: Optional[torch.Tensor]
     lemma: Optional[torch.Tensor]
     feats: Optional[torch.Tensor]
+    head: Optional[torch.Tensor]
+    deprel: Optional[torch.Tensor]
 
     def __init__(
-        self, tokenlist, upos=None, xpos=None, lemma=None, feats=None
+        self,
+        tokenlist,
+        upos=None,
+        xpos=None,
+        lemma=None,
+        feats=None,
+        head=None,
+        deprel=None,
     ):
         super().__init__()
         self.tokenlist = tokenlist
@@ -31,6 +40,8 @@ class Item(nn.Module):
         self.register_buffer("xpos", xpos)
         self.register_buffer("lemma", lemma)
         self.register_buffer("feats", feats)
+        self.register_buffer("head", head)
+        self.register_buffer("deprel", deprel)
 
     def get_tokens(self) -> List[str]:
         return self.tokenlist.get_tokens()
@@ -50,6 +61,10 @@ class Item(nn.Module):
     @property
     def use_feats(self) -> bool:
         return self.feats is not None
+
+    @property
+    def use_parse(self) -> bool:
+        return self.head is not None and self.deprel is not None
 
 
 @dataclasses.dataclass
@@ -80,6 +95,7 @@ class AbstractTaggedDataset(AbstractDataset):
     use_xpos: bool
     use_lemma: bool
     use_feats: bool
+    use_parse: bool
 
     def tokenlist_to_item(self, tokenlist: conllu.TokenList) -> Item:
         return Item(
@@ -111,6 +127,20 @@ class AbstractTaggedDataset(AbstractDataset):
                     token.feats for token in tokenlist if not token.is_mwe
                 )
                 if self.use_feats
+                else None
+            ),
+            head=(
+                self.mapper.encode_head(
+                    token.head for token in tokenlist if not token.is_mwe
+                )
+                if self.use_parse
+                else None
+            ),
+            deprel=(
+                self.mapper.encode_deprel(
+                    token.deprel for token in tokenlist if not token.is_mwe
+                )
+                if self.use_parse
                 else None
             ),
         )

@@ -12,15 +12,16 @@ from . import conllu
 class Batch(nn.Module):
     """CoNLL-U data batch.
 
-    This can handle padded label tensors if present.
-
     Args:
         tokenlists: list of TokenLists.
         tokens: batch encoding from the transformer.
-        pos: optional padded tensor of universal POS labels.
-        xpos: optional padded tensor of language-specific POS labels.
-        lemma: optional padded tensor of lemma labels.
-        feats: optional padded tensor of morphological feature labels.
+        pos: optional padded tensor of universal POS tags.
+        xpos: optional padded tensor of language-specific POS tag.
+        lemma: optional padded tensor of lemma tags.
+        feats: optional padded tensor of morphological feature tags.
+        head: optional padded tensor of dependency parser head indices.
+        deprel: optional padded tensor of dependency parser dependency
+            relations.
     """
 
     tokenlists: List[conllu.TokenList]
@@ -31,6 +32,8 @@ class Batch(nn.Module):
     xpos: Optional[torch.Tensor]
     lemma: Optional[torch.Tensor]
     feats: Optional[torch.Tensor]
+    head: Optional[torch.Tensor]
+    deprel: Optional[torch.Tensor]
 
     def __init__(
         self,
@@ -42,6 +45,8 @@ class Batch(nn.Module):
         xpos=None,
         lemma=None,
         feats=None,
+        head=None,
+        deprel=None,
     ):
         super().__init__()
         self.tokenlists = tokenlists
@@ -52,6 +57,8 @@ class Batch(nn.Module):
         self.register_buffer("xpos", xpos)
         self.register_buffer("lemma", lemma)
         self.register_buffer("feats", feats)
+        self.register_buffer("head", head)
+        self.register_buffer("deprel", deprel)
 
     @property
     def use_upos(self) -> bool:
@@ -68,6 +75,10 @@ class Batch(nn.Module):
     @property
     def use_feats(self) -> bool:
         return self.feats is not None
+
+    @property
+    def use_parse(self) -> bool:
+        return self.head is not None and self.deprel is not None
 
     def __len__(self) -> int:
         return len(self.tokenlists)
