@@ -35,6 +35,7 @@ class UDTubeCLI(cli.LightningCLI):
         parser.link_arguments("model.use_xpos", "data.use_xpos")
         parser.link_arguments("model.use_lemma", "data.use_lemma")
         parser.link_arguments("model.use_feats", "data.use_feats")
+        parser.link_arguments("model.use_parse", "data.use_parse")
         parser.link_arguments(
             "data.upos_tagset_size",
             "model.upos_out_size",
