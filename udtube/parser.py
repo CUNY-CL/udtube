@@ -367,7 +367,7 @@ class BiaffineParser(nn.Module):
                 if h != d:
                     scores[h][d] = arc_scores[d - 1, h - 1].item()
         mst_heads = self._chuliu_edmonds(scores)
-        # Convert MST 1-indexed heads back to stored representation.
+        # Converts MST 1-indexed heads back to stored representation.
         # Virtual root (mst_heads[d] == 0) -> stored 0 (root proxy).
         # Real token head h (1-indexed) -> stored h-1 (0-indexed position).
         result = torch.full(
