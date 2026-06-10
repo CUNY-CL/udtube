@@ -5,8 +5,6 @@ for a classification head, and L is the maximum length (in subwords, tokens,
 or tags) of a sentence in the batch.
 """
 
-from typing import List, Optional, Tuple
-
 import lightning
 import tokenizers
 import torch
@@ -55,7 +53,7 @@ class UDTubeEncoder(lightning.LightningModule):
     def forward(
         self,
         batch: data.Batch,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Computes the contextual word-level encoding.
 
         This discards over-long sequences (if necessary), computes the subword
@@ -90,7 +88,7 @@ class UDTubeEncoder(lightning.LightningModule):
     def _group_embeddings(
         self,
         embeddings: torch.Tensor,
-        encodings: List[tokenizers.Encoding],
+        encodings: list[tokenizers.Encoding],
     ) -> torch.Tensor:
         """Groups subword embeddings to form word embeddings.
 
@@ -179,11 +177,11 @@ class UDTubeClassifier(lightning.LightningModule):
         use_parse: enables the dependenchy parsing task.
     """
 
-    upos_head: Optional[nn.Linear]
-    xpos_head: Optional[nn.Linear]
-    lemma_head: Optional[nn.Linear]
-    feats_head: Optional[nn.Linear]
-    parse_head: Optional[parser.BiaffineParser]
+    upos_head: nn.Linear | None
+    xpos_head: nn.Linear | None
+    lemma_head: nn.Linear | None
+    feats_head: nn.Linear | None
+    parse_head: parser.BiaffineParser | None
 
     def __init__(
         self,

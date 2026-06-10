@@ -1,7 +1,5 @@
 """Batch objects."""
 
-from typing import List, Optional
-
 import tokenizers
 import torch
 from torch import nn
@@ -24,16 +22,16 @@ class Batch(nn.Module):
             relations.
     """
 
-    tokenlists: List[conllu.TokenList]
+    tokenlists: list[conllu.TokenList]
     input_ids: torch.Tensor
     attention_mask: torch.Tensor
-    encodings: List[tokenizers.Encoding]
-    upos: Optional[torch.Tensor]
-    xpos: Optional[torch.Tensor]
-    lemma: Optional[torch.Tensor]
-    feats: Optional[torch.Tensor]
-    head: Optional[torch.Tensor]
-    deprel: Optional[torch.Tensor]
+    encodings: list[tokenizers.Encoding]
+    upos: torch.Tensor | None
+    xpos: torch.Tensor | None
+    lemma: torch.Tensor | None
+    feats: torch.Tensor | None
+    head: torch.Tensor | None
+    deprel: torch.Tensor | None
 
     def __init__(
         self,

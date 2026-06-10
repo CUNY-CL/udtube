@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import Callable, Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 
 import torch
 
 from . import edit_scripts, indexes
-from .. import defaults, special
+from .. import defaults
 
 
 @dataclasses.dataclass
@@ -119,14 +119,19 @@ class Mapper:
     def encode_head(self, indices: Iterable[str]) -> torch.Tensor:
         """Encodes dependency parsing head indices.
 
+        CoNLL-U head 0 (root) and head 1 (first token) both map to stored
+        position 0; CoNLL-U head k >= 1 maps to stored k-1. This keeps all
+        stored values in [0, L-1] to fit the L-column arc logit matrix. See
+        the parser module docstring for the full rationale.
+
         Args:
-            indices: iterable of head indices.
+            indices: iterable of CoNLL-U head index strings.
 
         Returns:
-            Tensor of encoded head indices.
+            Tensor of stored head indices.
         """
-        # Cheeky, but it works.
-        return self._encode(indices, lambda idx: int(idx) + special.OFFSET)
+        # Shifts by 1.
+        return self._encode(indices, lambda idx: max(0, int(idx) - 1))
 
     def encode_deprel(self, deprel: Iterable[str]) -> torch.Tensor:
         """Encodes dependency parsing dependency relations.
@@ -150,15 +155,13 @@ class Mapper:
 
         Args:
             indices: tensor of indices.
-            functor: a callable mapping from strings to integers; usually
+            functor: a callable mapping from integers to strings; usually
                 this is the vocabulary object's `get_symbol` method.
 
         Yields:
             Decoded symbols.
         """
         for idx in indices:
-            # FIXME(kbg): is this the right thing to do? Do I need a special
-            # case for padding?
             yield functor(idx)
 
     def decode_upos(self, indices: torch.Tensor) -> Iterator[str]:
@@ -212,16 +215,22 @@ class Mapper:
         return self._decode(indices, self.index.feats.get_symbol)
 
     def decode_head(self, indices: torch.Tensor) -> Iterator[str]:
-        """Encodes dependency parsing head indices.
+        """Decodes stored head indices to CoNLL-U head index strings.
+
+        Stored position 0 is the root proxy (CoNLL-U 0); stored k >= 1
+        corresponds to CoNLL-U k+1 (1-indexed token). Note that stored 0
+        is unambiguously decoded as CoNLL-U 0 (root), which is correct
+        because the MST algorithm handles root assignment structurally.
 
         Args:
-            indices: iterable of head indices.
+            indices: tensor of stored head indices.
 
-        Returns:
-            Decoded head indices.
+        Yields:
+            CoNLL-U head index strings.
         """
+        # Shifts by 1.
         return self._decode(
-            indices, lambda idx: str(idx.item() - special.OFFSET)
+            indices, lambda idx: str(0 if idx.item() == 0 else idx.item() + 1)
         )
 
     def decode_deprel(self, indices: torch.Tensor) -> Iterator[str]:

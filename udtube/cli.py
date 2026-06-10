@@ -3,7 +3,7 @@
 import logging
 
 from lightning.pytorch import callbacks as pytorch_callbacks, cli
-from yoyodyne import trainers
+from yoyodyne import callbacks as yoyodyne_callbacks, trainers
 
 from . import callbacks, data, models
 
@@ -69,24 +69,25 @@ def main() -> None:
         datefmt="%d-%b-%y %H:%M:%S",
         level="INFO",
     )
-    UDTubeCLI(
-        models.UDTube,
-        data.DataModule,
-        auto_configure_optimizers=False,
-        parser_kwargs={"parser_mode": "omegaconf"},
-        # Prevents prediction logits from accumulating in memory; see the
-        # documentation in `trainers.py` for more context.
-        trainer_class=trainers.Trainer,
-    )
+    _run_cli()
 
 
-def python_interface(args: cli.ArgsType = None):
+def python_interface(args: cli.ArgsType | None = None) -> None:
     """Interface to use models through Python."""
+    _run_cli(args)
+
+
+def _run_cli(args: cli.ArgsType | None = None) -> None:
     UDTubeCLI(
         models.UDTube,
         data.DataModule,
         auto_configure_optimizers=False,
         parser_kwargs={"parser_mode": "omegaconf"},
+        save_config_callback=None,
         trainer_class=trainers.Trainer,
+        trainer_defaults={
+            "callbacks": [yoyodyne_callbacks.CompactModelSummary()],
+            "enable_model_summary": False,
+        },
         args=args,
     )

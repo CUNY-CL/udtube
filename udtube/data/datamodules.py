@@ -2,7 +2,8 @@
 
 import logging
 import os
-from typing import Iterable, Optional
+
+from collections.abc import Iterable
 
 import lightning
 import transformers
@@ -40,10 +41,10 @@ class DataModule(lightning.LightningDataModule):
         batch_size: Batch size.
     """
 
-    predict: Optional[str]
-    test: Optional[str]
-    train: Optional[str]
-    val: Optional[str]
+    predict: str | None
+    test: str | None
+    train: str | None
+    val: str | None
     reverse_edits: bool
     use_upos: bool
     use_xpos: bool
@@ -187,6 +188,12 @@ class DataModule(lightning.LightningDataModule):
                 "Features vocabulary (%d): %s",
                 self.feats_tagset_size,
                 self.pprint(self.index.feats),
+            )
+        if self.use_parse:
+            logging.info(
+                "Dependency relation vocabulary (%d): %s",
+                self.deprel_tagset_size,
+                self.pprint(self.index.deprel),
             )
 
     # Properties.

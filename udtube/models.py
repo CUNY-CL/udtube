@@ -1,7 +1,5 @@
 """The UDTube model."""
 
-from typing import Dict, List, Optional, Tuple
-
 import lightning
 from lightning.pytorch import cli
 import torch
@@ -36,12 +34,12 @@ class UDTube(lightning.LightningModule):
     classifier: modules.UDTubeClassifier
     loss_func: nn.CrossEntropyLoss
     # Used for validation in `fit` and testing in `test`.
-    upos_accuracy: Optional[classification.MulticlassAccuracy]
-    xpos_accuracy: Optional[classification.MulticlassAccuracy]
-    lemma_accuracy: Optional[classification.MulticlassAccuracy]
-    feats_accuracy: Optional[classification.MulticlassAccuracy]
-    unlabeled_score: Optional[metrics.UnlabeledAttachmentScore]
-    labeled_score: Optional[metrics.LabeledAttachmentScore]
+    upos_accuracy: classification.MulticlassAccuracy | None
+    xpos_accuracy: classification.MulticlassAccuracy | None
+    lemma_accuracy: classification.MulticlassAccuracy | None
+    feats_accuracy: classification.MulticlassAccuracy | None
+    unlabeled_score: metrics.UnlabeledAttachmentScore | None
+    labeled_score: metrics.LabeledAttachmentScore | None
 
     def __init__(
         self,
@@ -82,9 +80,6 @@ class UDTube(lightning.LightningModule):
             xpos_out_size=xpos_out_size,
             lemma_out_size=lemma_out_size,
             feats_out_size=feats_out_size,
-            arc_mlp_size=arc_mlp_size,
-            deprel_mlp_size=deprel_mlp_size,
-            deprel_out_size=deprel_out_size,
             use_upos=use_upos,
             use_xpos=use_xpos,
             use_lemma=use_lemma,
@@ -149,13 +144,13 @@ class UDTube(lightning.LightningModule):
     def forward(
         self,
         batch: data.Batch,
-    ) -> Tuple[data.Logits, torch.Tensor]:
+    ) -> tuple[data.Logits, torch.Tensor]:
         encoding, mask = self.encoder(batch)
         return self.classifier(encoding, mask), mask
 
     def configure_optimizers(
         self,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Prepare optimizers and schedulers."""
         encoder_optimizer = self.encoder_optimizer(self.encoder.parameters())
         encoder_scheduler = self.encoder_scheduler(encoder_optimizer)
@@ -198,7 +193,7 @@ class UDTube(lightning.LightningModule):
 
     def predict_step(
         self, batch: data.Batch, batch_idx: int
-    ) -> Tuple[data.Logits, torch.Tensor]:
+    ) -> tuple[data.Logits, torch.Tensor]:
         return self(batch)
 
     def training_step(

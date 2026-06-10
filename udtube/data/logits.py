@@ -1,7 +1,5 @@
 """Logits object."""
 
-from typing import Optional
-
 import torch
 from torch import nn
 
@@ -11,12 +9,12 @@ class Logits(nn.Module):
 
     Each tensor is either null or of shape N x C x L."""
 
-    upos: Optional[torch.Tensor]
-    xpos: Optional[torch.Tensor]
-    lemma: Optional[torch.Tensor]
-    feats: Optional[torch.Tensor]
-    head: Optional[torch.Tensor]
-    deprel: Optional[torch.Tensor]
+    upos: torch.Tensor | None
+    xpos: torch.Tensor | None
+    lemma: torch.Tensor | None
+    feats: torch.Tensor | None
+    head: torch.Tensor | None
+    deprel: torch.Tensor | None
 
     def __init__(
         self,

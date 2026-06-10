@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import dataclasses
 import difflib
-from typing import Dict, List
 
 
 @dataclasses.dataclass
@@ -30,14 +29,14 @@ class EditOp:
 
 class EditScript:
 
-    _ops: List[EditOp]
+    _ops: list[EditOp]
 
     DEL = "~"
     SEP = "|"
 
     def __init__(self, istring: str, ostring: str):
         matcher = difflib.SequenceMatcher(a=istring, b=ostring, autojunk=False)
-        table: Dict[int, EditOp] = {}
+        table: dict[int, EditOp] = {}
         for tag, ix, iy, ox, oy in matcher.get_opcodes():
             if tag in ("replace", "insert"):
                 op = table.get(ix, EditOp())
@@ -78,7 +77,7 @@ class EditScript:
         return script
 
     def apply(self, istring: str) -> str:
-        pieces: List[str] = []
+        pieces: list[str] = []
         for i, op in enumerate(self._ops):
             pieces.extend(op.insert)
             if not op.delete:

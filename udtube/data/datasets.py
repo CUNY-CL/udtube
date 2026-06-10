@@ -3,7 +3,9 @@
 import abc
 import dataclasses
 import mmap
-from typing import BinaryIO, Iterator, List, Optional
+
+from collections.abc import Iterator
+from typing import BinaryIO
 
 import torch
 from torch import nn
@@ -17,12 +19,12 @@ class Item(nn.Module):
     """Tensors representing a single labeled sentence."""
 
     tokenlist: conllu.TokenList
-    upos: Optional[torch.Tensor]
-    xpos: Optional[torch.Tensor]
-    lemma: Optional[torch.Tensor]
-    feats: Optional[torch.Tensor]
-    head: Optional[torch.Tensor]
-    deprel: Optional[torch.Tensor]
+    upos: torch.Tensor | None
+    xpos: torch.Tensor | None
+    lemma: torch.Tensor | None
+    feats: torch.Tensor | None
+    head: torch.Tensor | None
+    deprel: torch.Tensor | None
 
     def __init__(
         self,
@@ -43,7 +45,7 @@ class Item(nn.Module):
         self.register_buffer("head", head)
         self.register_buffer("deprel", deprel)
 
-    def get_tokens(self) -> List[str]:
+    def get_tokens(self) -> list[str]:
         return self.tokenlist.get_tokens()
 
     @property
@@ -169,9 +171,9 @@ class MappableDataset(AbstractTaggedDataset, data.Dataset):
 
     sequential: bool = False
 
-    _offsets: List[int] = dataclasses.field(default_factory=list, init=False)
-    _mmap: Optional[mmap.mmap] = dataclasses.field(default=None, init=False)
-    _fobj: Optional[BinaryIO] = dataclasses.field(default=None, init=False)
+    _offsets: list[int] = dataclasses.field(default_factory=list, init=False)
+    _mmap: mmap.mmap | None = dataclasses.field(default=None, init=False)
+    _fobj: BinaryIO | None = dataclasses.field(default=None, init=False)
 
     def __post_init__(self):
         # Computes offsets.

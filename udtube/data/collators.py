@@ -2,7 +2,9 @@
 
 import dataclasses
 import logging
-from typing import Any, Iterable, List
+
+from collections.abc import Iterable
+from typing import Any
 
 import torch
 from torch import nn
@@ -22,7 +24,7 @@ class Collator:
 
     tokenizer: transformers.AutoTokenizer
 
-    def __call__(self, itemlist: List[datasets.Item]) -> batches.Batch:
+    def __call__(self, itemlist: list[datasets.Item]) -> batches.Batch:
         # Runs the tokenizer.
         tokenized = self.tokenizer(
             [item.get_tokens() for item in itemlist],
@@ -94,7 +96,11 @@ class Collator:
                 else None
             ),
             head=(
-                self.pad_tensors([item.head for item in itemlist])
+                self.pad_tensors(
+                    [item.head for item in itemlist],
+                    # Uses a negative index to avoid clashes with 0 as root.
+                    pad_idx=special.HEAD_PAD_IDX,
+                )
                 if itemlist[0].use_parse
                 else None
             ),
@@ -106,7 +112,7 @@ class Collator:
         )
 
     @staticmethod
-    def _keep_list(items: List[Any], keep_items: Iterable[bool]) -> List[Any]:
+    def _keep_list(items: list[Any], keep_items: Iterable[bool]) -> list[Any]:
         """Simulates items[keep_items] for lists.
 
         Args:
@@ -122,12 +128,14 @@ class Collator:
 
     @staticmethod
     def pad_tensors(
-        tensorlist: List[torch.Tensor],
+        tensorlist: list[torch.Tensor],
+        pad_idx: int = special.PAD_IDX,
     ) -> torch.Tensor:
         """Pads and stacks a list of tensors.
 
         Args:
             tensorlist: a list of tensors to be padded.
+            pad_idx: padding index.
 
         Returns:
             The padded and stacked tensor.
@@ -138,7 +146,7 @@ class Collator:
                 nn.functional.pad(
                     tensor,
                     (0, pad_max - len(tensor)),
-                    value=special.PAD_IDX,
+                    value=pad_idx,
                 )
                 for tensor in tensorlist
             ]

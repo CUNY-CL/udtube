@@ -2,7 +2,9 @@
 
 import logging
 import sys
-from typing import Iterator, Optional, Sequence, TextIO, Tuple
+
+from collections.abc import Iterator, Sequence
+from typing import TextIO
 
 import lightning
 from lightning.pytorch import callbacks, trainer
@@ -21,13 +23,13 @@ class PredictionWriter(callbacks.BasePredictionWriter):
         path: Path for the predictions file.
     """
 
-    path: Optional[str]
+    path: str | None
     sink: TextIO
     mapper: data.Mapper
 
     def __init__(
         self,
-        path: Optional[str] = None,  # If not filled in, stdout will be used.
+        path: str | None = None,  # If not filled in, stdout will be used.
     ):
         super().__init__("batch")
         self.path = path
@@ -50,8 +52,8 @@ class PredictionWriter(callbacks.BasePredictionWriter):
         self,
         trainer: trainer.Trainer,
         model: models.UDTube,
-        logits_mask: Tuple[data.Logits, torch.Tensor],
-        batch_indices: Optional[Sequence[int]],
+        logits_mask: tuple[data.Logits, torch.Tensor],
+        batch_indices: Sequence[int] | None,
         batch: data.Batch,
         batch_idx: int,
         dataloader_idx: int,
