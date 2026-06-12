@@ -8,7 +8,7 @@ from collections.abc import Callable, Iterable, Iterator
 import torch
 
 from . import edit_scripts, indexes
-from .. import defaults
+from .. import defaults, special
 
 
 @dataclasses.dataclass
@@ -130,8 +130,14 @@ class Mapper:
         Returns:
             Tensor of stored head indices.
         """
-        # Shifts by 1.
-        return self._encode(indices, lambda idx: max(0, int(idx) - 1))
+        return self._encode(
+            indices,
+            lambda idx: (
+                special.HEAD_ROOT_IDX
+                if idx == "_"
+                else max(special.HEAD_ROOT_IDX, int(idx) - 1)
+            ),
+        )
 
     def encode_deprel(self, deprel: Iterable[str]) -> torch.Tensor:
         """Encodes dependency parsing dependency relations.

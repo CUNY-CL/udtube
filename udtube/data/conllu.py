@@ -164,6 +164,10 @@ class Token:
     def is_mwe(self) -> bool:
         return self.id_.is_mwe
 
+    @property
+    def is_real(self) -> bool:
+        return not self.id_.is_mwe and not self.id_.is_decimal
+
 
 class TokenList(collections.UserList):
     """TokenList object.
@@ -207,7 +211,7 @@ class TokenList(collections.UserList):
         return [
             self._handle_whitespace_token(token.form)
             for token in self
-            if not token.is_mwe
+            if token.is_real
         ]
 
 

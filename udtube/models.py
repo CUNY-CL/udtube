@@ -80,6 +80,7 @@ class UDTube(lightning.LightningModule):
             xpos_out_size=xpos_out_size,
             lemma_out_size=lemma_out_size,
             feats_out_size=feats_out_size,
+            deprel_out_size=deprel_out_size,
             use_upos=use_upos,
             use_xpos=use_xpos,
             use_lemma=use_lemma,
@@ -190,6 +191,11 @@ class UDTube(lightning.LightningModule):
             wandb.define_metric("val_lemma_accuracy", summary="max")
             wandb.define_metric("val_upos_accuracy", summary="max")
             wandb.define_metric("val_xpos_accuracy", summary="max")
+            wandb.define_metric("val_unlabeled_score", summary="max")
+            wandb.define_metric("val_labeled_score", summary="max")
+        # Ensures the model is in training mode.
+        self.classifier.train()
+        self.encoder.train()
 
     def predict_step(
         self, batch: data.Batch, batch_idx: int

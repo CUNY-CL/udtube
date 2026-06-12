@@ -104,43 +104,43 @@ class AbstractTaggedDataset(AbstractDataset):
             tokenlist,
             upos=(
                 self.mapper.encode_upos(
-                    token.upos for token in tokenlist if not token.is_mwe
+                    token.upos for token in tokenlist if token.is_real
                 )
                 if self.use_upos
                 else None
             ),
             xpos=(
                 self.mapper.encode_xpos(
-                    token.xpos for token in tokenlist if not token.is_mwe
+                    token.xpos for token in tokenlist if token.is_real
                 )
                 if self.use_xpos
                 else None
             ),
             lemma=(
                 self.mapper.encode_lemma(
-                    (token.form for token in tokenlist if not token.is_mwe),
-                    (token.lemma for token in tokenlist if not token.is_mwe),
+                    (token.form for token in tokenlist if token.is_real),
+                    (token.lemma for token in tokenlist if token.is_real),
                 )
                 if self.use_lemma
                 else None
             ),
             feats=(
                 self.mapper.encode_feats(
-                    token.feats for token in tokenlist if not token.is_mwe
+                    token.feats for token in tokenlist if token.is_real
                 )
                 if self.use_feats
                 else None
             ),
             head=(
                 self.mapper.encode_head(
-                    token.head for token in tokenlist if not token.is_mwe
+                    token.head for token in tokenlist if token.is_real
                 )
                 if self.use_parse
                 else None
             ),
             deprel=(
                 self.mapper.encode_deprel(
-                    token.deprel for token in tokenlist if not token.is_mwe
+                    token.deprel for token in tokenlist if token.is_real
                 )
                 if self.use_parse
                 else None

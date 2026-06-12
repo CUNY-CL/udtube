@@ -5,8 +5,7 @@ Based on:
     Dozat, T., and Manning, C. D. 2017. Deep biaffine attention for dependency
     parsing. In ICLR.
 
-MST decoding uses the Chu-Liu/Edmonds algorithm for maximum spanning
-arborescences:
+MST decoding uses the Chu-Liu/Edmonds algorithm for maximum spanning trees:
 
     Chu, Y.-J., and Liu, T.-H. 1965. On the shortest arborescence of a
     directed graph. Science Sinica 14:1396-1400.
@@ -28,7 +27,11 @@ that lack an explicit ROOT token in the encoder. The MST algorithm resolves
 root attachment structurally at decode time.
 
 HEAD_PAD_IDX (-1) is the unambiguous padding sentinel and is never a valid
-stored head value.
+stored head value. The CUDA NLL loss kernel asserts t >= 0 for all targets
+regardless of ignore_index, so in compute_loss we replace HEAD_PAD_IDX with
+n_classes (= L), which is non-negative and unambiguously out of range, then
+use it as ignore_index. When all positions are padding the loss is NaN;
+nan_to_num converts it to 0.
 """
 
 import math
@@ -81,16 +84,8 @@ class BiaffineAttention(nn.Module):
         Returns:
             Score tensor of shape N x L x L x out_size.
         """
-        assert head.shape[0] == dep.shape[0], "Batch size mismatch"
-        assert head.shape[1] == dep.shape[1], "Sequence length mismatch"
-        assert (
-            head.shape[2] == self.head_size
-        ), f"Head size mismatch: {head.shape[2]} != {self.head_size}"
-        assert (
-            dep.shape[2] == self.dep_size
-        ), f"Dep size mismatch: {dep.shape[2]} != {self.dep_size}"
-        head = torch.cat((head, torch.ones_like(head[..., :1])), dim=2)
-        dep = torch.cat((dep, torch.ones_like(dep[..., :1])), dim=2)
+        head = nn.functional.pad(head, (0, 1), value=1.0)
+        dep = nn.functional.pad(dep, (0, 1), value=1.0)
         dep_weight = torch.einsum("bld,odh->blho", dep, self.weight)
         return torch.einsum("bsh,bdho->bdso", head, dep_weight)
 
@@ -163,32 +158,16 @@ class BiaffineParser(nn.Module):
             arc_logits of shape N x L x L and deprel_logits of shape
             N x L x L x num_deprel. arc_logits[n, d, h] scores arc h->d.
         """
-        batch_size = encodings.size(0)
-        length = encodings.size(1)
         arc_logits = self.arc_attention(
             self.arc_head_mlp(encodings), self.arc_dep_mlp(encodings)
         ).squeeze(3)
         deprel_logits = self.deprel_attention(
             self.deprel_head_mlp(encodings), self.deprel_dep_mlp(encodings)
         )
-        # Masks padding columns (candidate heads) so they are never selected.
-        # arc_mask is N x 1 x L and broadcasts over the dependent dimension.
-        arc_mask = mask.unsqueeze(1)
-        arc_logits.masked_fill_(~arc_mask, defaults.NEG_EPSILON)
+        arc_logits.masked_fill_(~mask[:, None, :], defaults.NEG_EPSILON)
         deprel_logits.masked_fill_(
-            ~arc_mask.unsqueeze(3), defaults.NEG_EPSILON
+            ~mask[:, None, :, None], defaults.NEG_EPSILON
         )
-        assert arc_logits.shape == (
-            batch_size,
-            length,
-            length,
-        ), f"Arc logits shape mismatch: {arc_logits.shape}"
-        assert deprel_logits.shape == (
-            batch_size,
-            length,
-            length,
-            self.deprel_attention.out_size,
-        ), f"Deprel logits shape mismatch: {deprel_logits.shape}"
         return arc_logits, deprel_logits
 
     def compute_loss(
@@ -214,19 +193,21 @@ class BiaffineParser(nn.Module):
         Returns:
             The head and deprel losses.
         """
-        # head_logits reshaped to (N*L) x L; gold_head reshaped to (N*L,).
-        # Stored values are in [0, L-1] for real tokens; HEAD_PAD_IDX=-1 is
-        # the ignore_index.
-        head_loss = nn.functional.cross_entropy(
-            head_logits.reshape(-1, head_logits.size(2)),
-            gold_head.reshape(-1),
-            ignore_index=special.HEAD_PAD_IDX,
+        n_arc_classes = head_logits.size(2)
+        head_targets = gold_head.masked_fill(
+            gold_head == special.HEAD_PAD_IDX, n_arc_classes
+        )
+        head_loss = torch.nan_to_num(
+            nn.functional.cross_entropy(
+                head_logits.reshape(-1, n_arc_classes),
+                head_targets.reshape(-1),
+                ignore_index=n_arc_classes,
+            )
         )
         length = deprel_logits.size(1)
         num_deprel = deprel_logits.size(3)
-        # Padding positions have HEAD_PAD_IDX=-1 which is out of bounds for
-        # gather; clamps to 0 (the gathered values are masked out by the deprel
-        # loss's ignore_index anyway).
+        # HEAD_PAD_IDX=-1 is out of bounds for gather; clamp to 0.
+        # Those positions are masked out by the deprel ignore_index anyway.
         safe_gold_head = gold_head.clamp(min=0)
         gold_head_expanded = (
             safe_gold_head.unsqueeze(2)
@@ -236,10 +217,15 @@ class BiaffineParser(nn.Module):
         selected_deprel_logits = torch.gather(
             deprel_logits, dim=2, index=gold_head_expanded
         ).squeeze(2)
-        deprel_loss = nn.functional.cross_entropy(
-            selected_deprel_logits.reshape(-1, num_deprel),
-            gold_deprel.reshape(-1),
-            ignore_index=special.PAD_IDX,
+        deprel_targets = gold_deprel.masked_fill(
+            gold_deprel == special.PAD_IDX, num_deprel
+        )
+        deprel_loss = torch.nan_to_num(
+            nn.functional.cross_entropy(
+                selected_deprel_logits.reshape(-1, num_deprel),
+                deprel_targets.reshape(-1),
+                ignore_index=num_deprel,
+            )
         )
         return head_loss, deprel_loss
 
@@ -252,7 +238,7 @@ class BiaffineParser(nn.Module):
 
         Returns:
             A list of node indices forming a cycle, or an empty list if no
-                cycle is found.
+            cycle is found.
         """
         n = len(heads) - 1
         visited = [False] * (n + 1)
@@ -274,10 +260,12 @@ class BiaffineParser(nn.Module):
         return []
 
     @staticmethod
-    def _chuliu_edmonds(scores: list[list[float]]) -> list[int]:
-        """Maximum spanning arborescence via Chu-Liu/Edmonds.
+    def _chu_liu_edmonds(scores: list[list[float]]) -> list[int]:
+        """Maximum spanning tree via Chu-Liu/Edmonds.
 
         Node 0 is the virtual root and has no incoming arc.
+
+        The entire algorithm is O(n^3) in the length of the input.
 
         Args:
             scores: (n+1) x (n+1) dense score matrix; scores[h][d] is the
@@ -296,30 +284,36 @@ class BiaffineParser(nn.Module):
             for d in range(1, n + 1)
         ]
         cycle = BiaffineParser._find_cycle(heads)
-        if cycle:
+        if not cycle:
             return heads
         cycle_set = set(cycle)
         cycle_score = {c: scores[heads[c]][c] for c in cycle}
-        # Builds contracted graph: collapses cycle nodes into a super-node.
-        # Non-cycle nodes are renumbered contiguously; the super-node is last.
-        remap: list[int] = []
-        counter = 0
-        old_to_new = {}
+        # Contracts cycle into super-node; old_nodes maps each contracted index
+        # (0..super_idx-1) back to the original node; cycle nodes all map to
+        # super_idx in old_to_new.
+        old_nodes: list[int] = []
+        old_to_new: dict[int, int] = {}
         for node in range(n + 1):
             if node not in cycle_set:
-                old_to_new[node] = counter
-                remap.append(node)
-                counter += 1
-        super_idx = counter
+                old_to_new[node] = len(old_nodes)
+                old_nodes.append(node)
+        super_idx = len(old_nodes)
         for node in cycle:
             old_to_new[node] = super_idx
         new_n = super_idx
         new_scores: list[list[float]] = [
             [-math.inf] * (new_n + 1) for _ in range(new_n + 1)
         ]
-        # best_entry tracks which old (h, d) pair produced the best adjusted
-        # score for arcs entering the super-node, needed for cycle resolution.
-        best_entry = {}  # (nh, super_idx) -> (old_h, old_d)
+        # Tracks the best original arc for each contracted (h, d) pair that
+        # involves the super-node, in both directions, for result recovery.
+        #
+        # best_arc_into_super[nh] = (old_h, old_d): best arc from old_h into
+        #   cycle node old_d, where nh = old_to_new[old_h].
+        #
+        # best_arc_from_super[nd] = (old_h, old_d): best arc from cycle node
+        #   old_h to non-cycle node old_d, where nd = old_to_new[old_d].
+        best_arc_into_super: dict[int, tuple[int, int]] = {}
+        best_arc_from_super: dict[int, tuple[int, int]] = {}
         for h in range(n + 1):
             for d in range(1, n + 1):
                 if h == d:
@@ -331,15 +325,27 @@ class BiaffineParser(nn.Module):
                 if adj > new_scores[nh][nd]:
                     new_scores[nh][nd] = adj
                     if nd == super_idx:
-                        best_entry[(nh, super_idx)] = (h, d)
-        new_heads = BiaffineParser._chuliu_edmonds(new_scores)
-        result = [0] + [
-            remap[new_heads[old_to_new[d]]] if d not in cycle_set else heads[d]
-            for d in range(1, n + 1)
-        ]
+                        best_arc_into_super[nh] = (h, d)
+                    if nh == super_idx:
+                        best_arc_from_super[nd] = (h, d)
+        new_heads = BiaffineParser._chu_liu_edmonds(new_scores)
+        # Reconstructs: start from the greedy heads (cycle nodes already have
+        # their within-cycle arcs). Breaks the cycle at the entry point, then
+        # restores non-cycle nodes from the contracted solution.
+        result = heads[:]
         super_head_new = new_heads[super_idx]
-        old_h, best_d = best_entry[(super_head_new, super_idx)]
+        old_h, best_d = best_arc_into_super[super_head_new]
         result[best_d] = old_h
+        for d in range(1, n + 1):
+            if d in cycle_set:
+                continue
+            nd = old_to_new[d]
+            nh = new_heads[nd]
+            if nh == super_idx:
+                # d's head comes from some cycle node.
+                result[d] = best_arc_from_super[nd][0]
+            else:
+                result[d] = old_nodes[nh]
         return result
 
     def _decode_sentence(
@@ -359,19 +365,21 @@ class BiaffineParser(nn.Module):
         # scores[h][d] = score of arc h->d in 1-indexed space.
         # Root scores: score(root->d) = arc_scores[d-1, 0] (position 0 as
         # root proxy, see module docstring).
-        # Real-token arc scores: arc_scores[d-1, h-1] for h,d in 1..length.
         scores = [[-math.inf] * (length + 1) for _ in range(length + 1)]
         for d in range(1, length + 1):
             scores[0][d] = arc_scores[d - 1, 0].item()
             for h in range(1, length + 1):
                 if h != d:
                     scores[h][d] = arc_scores[d - 1, h - 1].item()
-        mst_heads = self._chuliu_edmonds(scores)
+        mst_heads = self._chu_liu_edmonds(scores)
         # Converts MST 1-indexed heads back to stored representation.
         # Virtual root (mst_heads[d] == 0) -> stored 0 (root proxy).
         # Real token head h (1-indexed) -> stored h-1 (0-indexed position).
         result = torch.full(
-            (arc_scores.size(0),), special.HEAD_PAD_IDX, dtype=torch.long
+            (arc_scores.size(0),),
+            special.HEAD_PAD_IDX,
+            device=arc_scores.device,
+            dtype=torch.long,
         )
         for d in range(1, length + 1):
             h = mst_heads[d]
