@@ -78,6 +78,9 @@ class ID:
         else:
             raise Error(f"Unable to parse ID {string}")
 
+    def __repr__(self) -> str:
+        return str(self)
+
     def __str__(self) -> str:
         if self.is_mwe:
             return f"{self.lower}-{self.upper}"
