@@ -6,12 +6,14 @@ import torch
 
 from udtube import metrics, special
 
+# We use values > 0 to avoid collision with PAD_IDX.
+
 
 class UnlabeledAttachmentScoreTest(unittest.TestCase):
 
     def setUp(self):
         self.metric = metrics.UnlabeledAttachmentScore(
-            ignore_index=special.PAD_IDX
+            ignore_index=special.HEAD_PAD_IDX
         )
 
     def test_perfect_accuracy(self):
@@ -27,24 +29,20 @@ class UnlabeledAttachmentScoreTest(unittest.TestCase):
         self.assertEqual(self.metric.compute().item(), 0.0)
 
     def test_partial_accuracy(self):
-        pred_heads = torch.tensor([[3, 3, 6, 5]])
-        target_heads = torch.tensor([[3, 3, 4, 5]])
-
-    def test_partial_accuracy(self):
-        pred_heads = torch.tensor([[0, 0, 3, 2]])
-        target_heads = torch.tensor([[0, 0, 1, 2]])
+        pred_heads = torch.tensor([[1, 1, 3, 2]])
+        target_heads = torch.tensor([[1, 1, 1, 2]])
         self.metric.update(pred_heads, target_heads)
         self.assertAlmostEqual(self.metric.compute().item(), 0.75)
 
     def test_padding_ignored(self):
-        pred_heads = torch.tensor([[3, 3, 4, special.PAD_IDX]])
-        target_heads = torch.tensor([[3, 3, 4, special.PAD_IDX]])
+        pred_heads = torch.tensor([[3, 3, 4, special.HEAD_PAD_IDX]])
+        target_heads = torch.tensor([[3, 3, 4, special.HEAD_PAD_IDX]])
         self.metric.update(pred_heads, target_heads)
         self.assertEqual(self.metric.compute().item(), 1.0)
 
     def test_padding_does_not_affect_score(self):
         pred_heads = torch.tensor([[3, 3, 4, 5]])
-        target_heads = torch.tensor([[3, 3, 4, special.PAD_IDX]])
+        target_heads = torch.tensor([[3, 3, 4, special.HEAD_PAD_IDX]])
         self.metric.update(pred_heads, target_heads)
         self.assertEqual(self.metric.compute().item(), 1.0)
 
@@ -91,7 +89,7 @@ class LabeledAttachmentScoreTest(unittest.TestCase):
 
     def setUp(self):
         self.metric = metrics.LabeledAttachmentScore(
-            ignore_index=special.PAD_IDX
+            ignore_index=special.HEAD_PAD_IDX
         )
 
     def test_perfect_accuracy(self):
@@ -144,8 +142,8 @@ class LabeledAttachmentScoreTest(unittest.TestCase):
         self.assertAlmostEqual(self.metric.compute().item(), 0.75)
 
     def test_padding_ignored(self):
-        pred_heads = torch.tensor([[3, 3, 4, special.PAD_IDX]])
-        target_heads = torch.tensor([[3, 3, 4, special.PAD_IDX]])
+        pred_heads = torch.tensor([[3, 3, 4, special.HEAD_PAD_IDX]])
+        target_heads = torch.tensor([[3, 3, 4, special.HEAD_PAD_IDX]])
         pred_labels = torch.tensor([[8, 13, 6, special.PAD_IDX]])
         target_labels = torch.tensor([[8, 13, 6, special.PAD_IDX]])
         self.metric.update(

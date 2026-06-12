@@ -15,6 +15,7 @@ class NoHeadTest(unittest.TestCase):
                 use_xpos=False,
                 use_lemma=False,
                 use_feats=False,
+                use_parse=False,
             )
 
 
