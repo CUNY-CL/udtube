@@ -25,11 +25,12 @@ SUPPORTED_ENCODERS = {
     "FacebookAI/roberta": {"dropout": "hidden_dropout_prob"},
     "FacebookAI/xlm-roberta": {"dropout": "hidden_dropout_prob"},
     "dccuchile/bert-base-spanish": {"dropout": "hidden_dropout_prob"},
-    "distilbert/distilbert": {},
-    "flaubert/flaubert": {},
-    "google-t5/t5": {"hidden_dropout_prob": "dropout_rate"},
+    "google-t5/t5": {"dropout": "hidden_dropout_prob"},
     "google-bert/bert": {"dropout": "hidden_dropout_prob"},
     "nlpaueb/bert-base-greek": {"dropout": "hidden_dropout_prob"},
+    # Tested, but don't require remapping.
+    "distilbert/distilbert": {},
+    "flaubert/flaubert": {},
 }
 
 
@@ -44,15 +45,13 @@ def load(model_name: str, **kwargs) -> transformers.AutoModel:
     Returns:
         A Hugging Face encoder.
     """
-    model_found = False
     for prefix, remappings in SUPPORTED_ENCODERS.items():
         if model_name.startswith(prefix):
             for from_, to_ in remappings.items():
-                kwargs[to_] = kwargs[from_]
-                del kwargs[from_]
-            model_found = True
+                if from_ in kwargs:
+                    kwargs[to_] = kwargs.pop(from_)
             break
-    if not model_found:
+    else:
         logging.warning(
             "Model %s has not been tested with UDTube; it may require special "
             "casing in %s",
