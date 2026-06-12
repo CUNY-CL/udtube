@@ -3,8 +3,6 @@ metric:
   name: val_loss
   goal: minimize
 parameters:
-  model.use_xpos:
-    value: true
   model.dropout:
     distribution: uniform
     min: 0
@@ -33,6 +31,16 @@ parameters:
     q: 1
     min: 1
     max: 40
+  model.arc_mlp_size:
+    distribution: q_uniform
+    q: 64
+    min: 64
+    max: 512
+  model.deprel_mlp_size:
+    distribution: q_uniform
+    q: 64
+    min: 64
+    max: 256
   model.classifier_optimizer.class_path:
     value: torch.optim.Adam
   model.classifier_optimizer.init_args.lr:
