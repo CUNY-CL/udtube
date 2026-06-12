@@ -60,29 +60,31 @@ Dependencies project](https://universaldependencies.org/).
 
 UDTube can perform up to four morphological tasks simultaneously:
 
-- Lemmatization is performed using the `LEMMA` field and edit scripts.
-- [Universal part-of-speech
-  tagging](https://universaldependencies.org/u/pos/index.html) is performed
-  using the `UPOS` field.
-- Language-specific part-of-speech tagging is performed using the `XPOS` field.
-- Morphological feature tagging is performed using the `FEATS` field.
-- Dependency parsing is performed using the `HEAD` and `DEPREL` fields, a deep
-  biaffine parser, and minimum spanning tree decoding.
+-   Lemmatization is performed using the `LEMMA` field and edit scripts.
+-   [Universal part-of-speech
+    tagging](https://universaldependencies.org/u/pos/index.html) is performed
+    using the `UPOS` field.
+-   Language-specific part-of-speech tagging is performed using the `XPOS`
+    field.
+-   Morphological feature tagging is performed using the `FEATS` field.
+-   Dependency parsing is performed using the `HEAD` and `DEPREL` fields, a deep
+    biaffine parser, and minimum spanning tree decoding.
 
 The following caveats apply:
 
-- By default, lemmatization uses reverse-edit scripts. This is appropriate for
-  predominantly suffixal languages, which are thought to represent the majority
-  of the world's languages. If working with a predominantly prefixal language,
-  disable this with `data: reverse_edits: false`.
-- Note that many newer Universal Dependencies datasets do not have
-  language-specific part-of-speech-tags so this task should be disabled
-  (`data: use_xpos: false`).
-- The `FEATS` field is treated as a single unit and is not segmented in any way.
-- One can convert from [Universal Dependencies morphological
-  features](https://universaldependencies.org/u/feat/index.html) to [UniMorph
-  features](https://unimorph.github.io/schema/) using
-  [`scripts/convert_to_um.py`](scripts/convert_to_um.py).
+-   By default, lemmatization uses reverse-edit scripts. This is appropriate for
+    predominantly suffixal languages, which are thought to represent the
+    majority of the world's languages. If working with a predominantly prefixal
+    language, disable this with `data: reverse_edits: false`.
+-   Note that many newer Universal Dependencies datasets do not have
+    language-specific part-of-speech-tags so this task should be disabled
+    (`data: use_xpos: false`).
+-   The `FEATS` field is treated as a single unit and is not segmented in any
+    way.
+-   One can convert from [Universal Dependencies morphological
+    features](https://universaldependencies.org/u/feat/index.html) to [UniMorph
+    features](https://unimorph.github.io/schema/) using
+    [`scripts/convert_to_um.py`](scripts/convert_to_um.py).
 
 ## Usage
 
@@ -130,8 +132,9 @@ supported as they lack an `AutoTokenizer`.
 
 #### Classifier
 
-The classifier layer contains up to four sequential linear heads for the four
-tasks described above. By default all four are enabled.
+The classifier layer contains up to four sequential linear heads for the tagging
+tasks, and a biaffine parser head for the parsing task. By default all heads are
+enabled.
 
 #### Optimization
 
@@ -260,14 +263,14 @@ written.
 
 Here are some additional details:
 
-- In `predict` mode UDTube loads the file to be labeled incrementally (i.e., one
-  sentence at a time) so this can be used with very large files.
-- In `predict` mode, if no path for the predictions is specified, stdout will be
-  used. If using this in conjunction with \> or \|, add
-  `--trainer.enable_progress_bar false` on the command line.
-- The target task fields are overriden if their heads are active.
-- Use [`scripts/pretokenize.py`](scripts/pretokenize.py) to convert raw text
-  files to CoNLL-U input files.
+-   In `predict` mode UDTube loads the file to be labeled incrementally (i.e.,
+    one sentence at a time) so this can be used with very large files.
+-   In `predict` mode, if no path for the predictions is specified, stdout will
+    be used. If using this in conjunction with \> or \|, add
+    `--trainer.enable_progress_bar false` on the command line.
+-   The target task fields are overriden if their heads are active.
+-   Use [`scripts/pretokenize.py`](scripts/pretokenize.py) to convert raw text
+    files to CoNLL-U input files.
 
 This mode is invoked using the `predict` subcommand, like so:
 
