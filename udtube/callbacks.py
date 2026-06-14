@@ -127,7 +127,6 @@ class PredictionWriter(callbacks.BasePredictionWriter):
                     f"Length mismatch at token {token!r} (sent_id: "
                     f"{tokenlist.metadata.get('sent_id')})"
                 )
-                continue
 
     @staticmethod
     def _fill_in_parse(
@@ -157,7 +156,6 @@ class PredictionWriter(callbacks.BasePredictionWriter):
                     f"Length mismatch at token {token!r} (sent_id: "
                     f"{tokenlist.metadata.get('sent_id')})"
                 )
-                continue
 
     def on_predict_end(
         self,
