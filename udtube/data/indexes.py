@@ -17,7 +17,8 @@ from __future__ import annotations
 
 import dataclasses
 import pickle
-from typing import Dict, Iterable, List, Optional
+
+from collections.abc import Iterable
 
 from .. import defaults, special
 
@@ -25,8 +26,8 @@ from .. import defaults, special
 class Vocabulary:
     """Maintains an index over a vocabulary."""
 
-    _index2symbol: List[str]
-    _symbol2index: Dict[str, int]
+    _index2symbol: list[str]
+    _symbol2index: dict[str, int]
 
     def __init__(self, vocabulary: Iterable[str]):
         self._index2symbol = special.SPECIAL + sorted(vocabulary)
@@ -35,7 +36,7 @@ class Vocabulary:
     def __len__(self) -> int:
         return len(self._index2symbol)
 
-    def __iter__(self) -> List[str]:
+    def __iter__(self) -> list[str]:
         return iter(self._index2symbol)
 
     # Lookup.
@@ -75,13 +76,16 @@ class Index:
         xpos: optional vocabulary for language-specific POS tagging.
         lemma: optional vocabulary for lemmatization.
         feats: optional vocabulary for morphological tagging.
+        deprel: optional vocabulary for dependency parsing dependency
+            relations.
     """
 
     reverse_edits: bool = defaults.REVERSE_EDITS
-    upos: Optional[Vocabulary] = None
-    xpos: Optional[Vocabulary] = None
-    lemma: Optional[Vocabulary] = None
-    feats: Optional[Vocabulary] = None
+    upos: Vocabulary | None = None
+    xpos: Vocabulary | None = None
+    lemma: Vocabulary | None = None
+    feats: Vocabulary | None = None
+    deprel: Vocabulary | None = None
 
     # Serialization.
 

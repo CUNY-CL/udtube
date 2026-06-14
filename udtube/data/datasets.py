@@ -3,7 +3,9 @@
 import abc
 import dataclasses
 import mmap
-from typing import BinaryIO, Iterator, List, Optional
+
+from collections.abc import Iterator
+from typing import BinaryIO
 
 import torch
 from torch import nn
@@ -17,13 +19,22 @@ class Item(nn.Module):
     """Tensors representing a single labeled sentence."""
 
     tokenlist: conllu.TokenList
-    upos: Optional[torch.Tensor]
-    xpos: Optional[torch.Tensor]
-    lemma: Optional[torch.Tensor]
-    feats: Optional[torch.Tensor]
+    upos: torch.Tensor | None
+    xpos: torch.Tensor | None
+    lemma: torch.Tensor | None
+    feats: torch.Tensor | None
+    head: torch.Tensor | None
+    deprel: torch.Tensor | None
 
     def __init__(
-        self, tokenlist, upos=None, xpos=None, lemma=None, feats=None
+        self,
+        tokenlist,
+        upos=None,
+        xpos=None,
+        lemma=None,
+        feats=None,
+        head=None,
+        deprel=None,
     ):
         super().__init__()
         self.tokenlist = tokenlist
@@ -31,8 +42,10 @@ class Item(nn.Module):
         self.register_buffer("xpos", xpos)
         self.register_buffer("lemma", lemma)
         self.register_buffer("feats", feats)
+        self.register_buffer("head", head)
+        self.register_buffer("deprel", deprel)
 
-    def get_tokens(self) -> List[str]:
+    def get_tokens(self) -> list[str]:
         return self.tokenlist.get_tokens()
 
     @property
@@ -50,6 +63,10 @@ class Item(nn.Module):
     @property
     def use_feats(self) -> bool:
         return self.feats is not None
+
+    @property
+    def use_parse(self) -> bool:
+        return self.head is not None and self.deprel is not None
 
 
 @dataclasses.dataclass
@@ -80,37 +97,52 @@ class AbstractTaggedDataset(AbstractDataset):
     use_xpos: bool
     use_lemma: bool
     use_feats: bool
+    use_parse: bool
 
     def tokenlist_to_item(self, tokenlist: conllu.TokenList) -> Item:
         return Item(
             tokenlist,
             upos=(
                 self.mapper.encode_upos(
-                    token.upos for token in tokenlist if not token.is_mwe
+                    token.upos for token in tokenlist if token.is_real
                 )
                 if self.use_upos
                 else None
             ),
             xpos=(
                 self.mapper.encode_xpos(
-                    token.xpos for token in tokenlist if not token.is_mwe
+                    token.xpos for token in tokenlist if token.is_real
                 )
                 if self.use_xpos
                 else None
             ),
             lemma=(
                 self.mapper.encode_lemma(
-                    (token.form for token in tokenlist if not token.is_mwe),
-                    (token.lemma for token in tokenlist if not token.is_mwe),
+                    (token.form for token in tokenlist if token.is_real),
+                    (token.lemma for token in tokenlist if token.is_real),
                 )
                 if self.use_lemma
                 else None
             ),
             feats=(
                 self.mapper.encode_feats(
-                    token.feats for token in tokenlist if not token.is_mwe
+                    token.feats for token in tokenlist if token.is_real
                 )
                 if self.use_feats
+                else None
+            ),
+            head=(
+                self.mapper.encode_head(
+                    token.head for token in tokenlist if token.is_real
+                )
+                if self.use_parse
+                else None
+            ),
+            deprel=(
+                self.mapper.encode_deprel(
+                    token.deprel for token in tokenlist if token.is_real
+                )
+                if self.use_parse
                 else None
             ),
         )
@@ -139,9 +171,9 @@ class MappableDataset(AbstractTaggedDataset, data.Dataset):
 
     sequential: bool = False
 
-    _offsets: List[int] = dataclasses.field(default_factory=list, init=False)
-    _mmap: Optional[mmap.mmap] = dataclasses.field(default=None, init=False)
-    _fobj: Optional[BinaryIO] = dataclasses.field(default=None, init=False)
+    _offsets: list[int] = dataclasses.field(default_factory=list, init=False)
+    _mmap: mmap.mmap | None = dataclasses.field(default=None, init=False)
+    _fobj: BinaryIO | None = dataclasses.field(default=None, init=False)
 
     def __post_init__(self):
         # Computes offsets.

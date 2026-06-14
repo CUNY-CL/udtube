@@ -22,12 +22,6 @@ trainer:
 model:
   dropout: 0.4
   encoder: distilbert/distilbert-base-cased
-  pooling_layers: 4
-  reverse_edits: true
-  use_upos: true
-  use_xpos: true
-  use_lemma: true
-  use_feats: true
   encoder_optimizer:
     class_path: torch.optim.Adam
     init_args:
@@ -52,6 +46,7 @@ data:
   test: /Users/Shinji/UD_English-EWT/en_ewt-ud-test.conllu
   predict: /Users/Shinji/UD_English-EWT/en_ewt-ud-test.conllu
   batch_size: 32
+  reverse_edits: true
 checkpoint:
   filename: "model-{epoch:03d}-{val_loss:.4f}"
   monitor: val_loss

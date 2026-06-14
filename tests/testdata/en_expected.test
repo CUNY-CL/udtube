@@ -1,8 +1,10 @@
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃        Test metric        ┃       DataLoader 0        ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│    test_feats_accuracy    │            1.0            │
-│    test_lemma_accuracy    │            1.0            │
-│    test_upos_accuracy     │            1.0            │
-│    test_xpos_accuracy     │            1.0            │
+│    test_feats_accuracy    │    0.9765258431434631     │
+│    test_labeled_score     │    0.6666666865348816     │
+│    test_lemma_accuracy    │     0.98591548204422      │
+│   test_unlabeled_score    │    0.7020648717880249     │
+│    test_upos_accuracy     │    0.9765258431434631     │
+│    test_xpos_accuracy     │    0.9718309640884399     │
 └───────────────────────────┴───────────────────────────┘

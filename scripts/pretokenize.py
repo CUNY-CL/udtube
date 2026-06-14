@@ -13,7 +13,7 @@ def main(args: argparse.Namespace) -> None:
     spacy_udpipe.download(args.langcode)
     tokenize = spacy_udpipe.load(args.langcode).tokenizer
     with (
-        open(args.text, "r") as source,
+        open(args.text) as source,
         open(args.conllu, "w") as sink,
     ):
         for sentence in tokenize(source.read()).sents:

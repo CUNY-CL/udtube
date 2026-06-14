@@ -12,6 +12,7 @@ model:
   encoder: google-bert/bert-base-cased
 seed_everything: 42
 trainer:
+  accelerator: cpu
   deterministic: true  # Slower but we're testing...
   max_epochs: 1
   precision: bf16-mixed

@@ -32,8 +32,8 @@ class UDTubeTest(unittest.TestCase):
 
     def assertFileIdentity(self, actual_path: str, expected_path: str):
         with (
-            open(actual_path, "r") as actual,
-            open(expected_path, "r") as expected,
+            open(actual_path) as actual,
+            open(expected_path) as expected,
         ):
             difflines = "".join(
                 difflib.unified_diff(
@@ -98,7 +98,7 @@ class UDTubeTest(unittest.TestCase):
                 f"--ckpt_path={checkpoint_path}",
                 f"--config={CONFIG_PATH}",
                 f"--data.model_dir={model_dir}",
-                f"--data.predict={expected_path}",
+                f"--data.predict={train_path}",
                 f"--model.encoder={encoder}",
                 f"--model.use_xpos={use_xpos}",
                 f"--prediction.path={predicted_path}",
@@ -119,7 +119,7 @@ class UDTubeTest(unittest.TestCase):
                         f"--ckpt_path={checkpoint_path}",
                         f"--config={CONFIG_PATH}",
                         f"--data.model_dir={model_dir}",
-                        f"--data.test={expected_path}",
+                        f"--data.test={train_path}",
                         f"--model.encoder={encoder}",
                         f"--model.use_xpos={use_xpos}",
                         "--trainer.enable_progress_bar=false",

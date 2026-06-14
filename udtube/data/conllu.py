@@ -10,7 +10,9 @@ import collections
 import dataclasses
 import re
 
-from typing import Dict, Iterable, Iterator, List, Optional, TextIO, Tuple
+from collections.abc import Iterable, Iterator
+from typing import TextIO
+
 from .. import special
 
 
@@ -51,8 +53,8 @@ class ID:
         self,
         lower,
         *,
-        decimal: Optional[int] = None,
-        upper: Optional[int] = None,
+        decimal: int | None = None,
+        upper: int | None = None,
     ):
         self.lower = lower
         if decimal is None:
@@ -75,6 +77,9 @@ class ID:
             return cls(int(mtch.group()))
         else:
             raise Error(f"Unable to parse ID {string}")
+
+    def __repr__(self) -> str:
+        return str(self)
 
     def __str__(self) -> str:
         if self.is_mwe:
@@ -119,16 +124,25 @@ class Token:
     upos: str
     xpos: str
     feats: str
-    head: str  # This could be parsed as an Optional[int] but YAGNI.
+    head: str  # This could be parsed as an int | None but YAGNI.
     deprel: str
     deps: str
     misc: str
 
     @classmethod
     def parse_from_string(cls, string: str) -> Token:
-        id_, form, lemma, upos, xpos, feats, head, deprel, deps, misc = (
-            string.split("\t")
-        )
+        (
+            id_,
+            form,
+            lemma,
+            upos,
+            xpos,
+            feats,
+            head,
+            deprel,
+            deps,
+            misc,
+        ) = string.split("\t")
         return cls(
             ID.parse_from_string(id_),
             form,
@@ -153,20 +167,24 @@ class Token:
     def is_mwe(self) -> bool:
         return self.id_.is_mwe
 
+    @property
+    def is_real(self) -> bool:
+        return not self.id_.is_mwe and not self.id_.is_decimal
+
 
 class TokenList(collections.UserList):
     """TokenList object.
 
-    This behaves like a list of tokens (of type Dict[str, str]) with
+    This behaves like a list of tokens (of type dict[str, str]) with
     optional associated metadata.
 
     Args:
         tokens (Iterable[Token]): iterable of tokens.
-        metadata (Dict[str, Optional[str]], optional): ordered dictionary of
+        metadata (dict[str, str | None], optional): ordered dictionary of
             string/key pairs.
     """
 
-    metadata: Dict[str, Optional[str]]
+    metadata: dict[str, str | None]
 
     def __init__(self, tokens: Iterable[Token], metadata=None):
         super().__init__(tokens)
@@ -191,19 +209,19 @@ class TokenList(collections.UserList):
             return special.UNK
         return token
 
-    def get_tokens(self) -> List[str]:
+    def get_tokens(self) -> list[str]:
         """List of tokens to be fed into tokenizer."""
         return [
             self._handle_whitespace_token(token.form)
             for token in self
-            if not token.is_mwe
+            if token.is_real
         ]
 
 
 # Parsing.
 
 
-def _maybe_parse_metadata(line: str) -> Optional[Tuple[str, str]]:
+def _maybe_parse_metadata(line: str) -> tuple[str, str] | None:
     """Attempts to parse the line as metadata."""
     # The first group is the key; the optional third element is the value.
     if match := re.fullmatch(r"#\s+(.+?)(\s+=\s+(.*))?", line):
@@ -277,5 +295,5 @@ def parse_from_path(path: str) -> Iterator[TokenList]:
     Yields:
         TokenLists.
     """
-    with open(path, "r") as source:
+    with open(path) as source:
         yield from _parse_from_handle(source)

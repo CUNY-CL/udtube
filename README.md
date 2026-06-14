@@ -60,31 +60,31 @@ Dependencies project](https://universaldependencies.org/).
 
 UDTube can perform up to four morphological tasks simultaneously:
 
--   Lemmatization is performed using the `LEMMA` field and [edit
-    scripts](https://aclanthology.org/P14-2111/).
-
+-   Lemmatization is performed using the `LEMMA` field and edit scripts.
 -   [Universal part-of-speech
     tagging](https://universaldependencies.org/u/pos/index.html) is performed
-    using the `UPOS` field: enable with `data: use_upos: true`.
-
+    using the `UPOS` field.
 -   Language-specific part-of-speech tagging is performed using the `XPOS`
-    field: enable with `data: use_xpos: true`.
-
--   Morphological feature tagging is performed using the `FEATS` field: enable
-    with `data: use_feats: true`.
+    field.
+-   Morphological feature tagging is performed using the `FEATS` field.
+-   Dependency parsing is performed using the `HEAD` and `DEPREL` fields, a deep
+    biaffine parser, and minimum spanning tree decoding.
 
 The following caveats apply:
 
+-   By default, lemmatization uses reverse-edit scripts. This is appropriate for
+    predominantly suffixal languages, which are thought to represent the
+    majority of the world's languages. If working with a predominantly prefixal
+    language, disable this with `data: reverse_edits: false`.
 -   Note that many newer Universal Dependencies datasets do not have
-    language-specific part-of-speech-tags.
+    language-specific part-of-speech-tags so this task should be disabled
+    (`data: use_xpos: false`).
 -   The `FEATS` field is treated as a single unit and is not segmented in any
     way.
 -   One can convert from [Universal Dependencies morphological
     features](https://universaldependencies.org/u/feat/index.html) to [UniMorph
     features](https://unimorph.github.io/schema/) using
     [`scripts/convert_to_um.py`](scripts/convert_to_um.py).
--   UDTube does not perform dependency parsing at present, so the `HEAD`,
-    `DEPREL`, and `DEPS` fields are ignored and should be specified as `_`.
 
 ## Usage
 
@@ -132,8 +132,9 @@ supported as they lack an `AutoTokenizer`.
 
 #### Classifier
 
-The classifier layer contains up to four sequential linear heads for the four
-tasks described above. By default all four are enabled.
+The classifier layer contains up to four sequential linear heads for the tagging
+tasks, and a biaffine parser head for the parsing task. By default all heads are
+enabled.
 
 #### Optimization
 
@@ -189,7 +190,7 @@ information](https://github.com/CUNY-CL/yoyodyne/blob/master/README.md#logging).
 
 #### Other options
 
-By default, UDTube attempts to model all four tasks; one can disable the
+By default, UDTube attempts to model all five tasks; one can disable the
 language-specific tagging task using `model: use_xpos: false`, and so on.
 
 Dropout probability is specified using `model: dropout: ...`.
@@ -198,11 +199,6 @@ The encoder has multiple layers. The input to the classifier consists of just
 the last few layers mean-pooled together. The number of layers used for
 mean-pooling is specified using `model: pooling_layers: ...`.
 
-By default, lemmatization uses reverse-edit scripts. This is appropriate for
-predominantly suffixal languages, which are thought to represent the majority of
-the world's languages. If working with a predominantly prefixal language,
-disable this with `model: reverse_edits: false`.
-
 The following YAML snippet shows the default architectural arguments.
 
     ...
@@ -210,13 +206,12 @@ The following YAML snippet shows the default architectural arguments.
       dropout: 0.5
       encoder: google-bert/bert-base-multilingual-cased
       pooling_layers: 1
-      reverse_edits: true
       use_upos: true
       use_xpos: true
       use_lemma: true
       use_feats: true
+      use_parse: true
       ...
-      
 
 Batch size is specified using `data: batch_size: ...` and defaults to 32.
 
@@ -322,3 +317,6 @@ following document, which describes the model:
 Yakubov, D. 2024. [How do we learn what we cannot
 say?](https://academicworks.cuny.edu/gc_etds/5622/) Master's thesis, CUNY
 Graduate Center.
+
+(See also [`udtube.bib`](udtube.bib) for more work used during the development
+of this library.)

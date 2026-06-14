@@ -11,15 +11,13 @@ en() {
         --data.model_dir="${MODEL_DIR}" \
         --data.train=tests/testdata/en_train.conllu \
         --data.val=tests/testdata/en_train.conllu \
-        --model.encoder=google-bert/bert-base-cased \
-        --model.use_xpos=true
+        --model.encoder=google-bert/bert-base-cased
     udtube predict \
         --ckpt_path="${MODEL_DIR}/lightning_logs/version_0/checkpoints/last.ckpt" \
         --config=tests/testdata/udtube_config.yaml \
         --data.model_dir="${MODEL_DIR}" \
         --data.predict=tests/testdata/en_train.conllu \
         --model.encoder=google-bert/bert-base-cased \
-        --model.use_xpos=true \
         --trainer.enable_progress_bar=False \
         > tests/testdata/en_expected.conllu 
     udtube test \
@@ -28,7 +26,6 @@ en() {
         --data.model_dir="${MODEL_DIR}" \
         --data.test=tests/testdata/en_train.conllu \
         --model.encoder=google-bert/bert-base-cased \
-        --model.use_xpos=true \
         --trainer.enable_progress_bar=false \
         > tests/testdata/en_expected.test
     rm -rf "${MODEL_DIR}"
